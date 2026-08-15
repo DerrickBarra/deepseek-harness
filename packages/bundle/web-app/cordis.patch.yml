@@ -94,6 +94,10 @@
     - id: plugin-inventory
       name: '@deepseek-ai/dsh-host-plugin-inventory'
 
+    # Allowlisted local folder browser for the sidebar file-viewer panel.
+    - id: workspace-file-viewer
+      name: '@deepseek-ai/dsh-host-workspace-file-viewer'
+
     # The API gateway: the transport-agnostic dispatch face every client shape
     # shares. The base layer's agent-default-model service owns the default model.
     - id: api-gateway
@@ -218,6 +222,9 @@
 
     - id: ui-workspace
       name: '@deepseek-ai/dsh-client-ui-workspace'
+
+    - id: ui-workspace-file-viewer
+      name: '@deepseek-ai/dsh-client-ui-workspace-file-viewer'
 
     # Input triggers: the '/' | '@' pipeline (ui-input-trigger), the command surface over
     # it (ui-commands), and the two reference sources (ui-skill / ui-subagent).
