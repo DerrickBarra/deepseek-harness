@@ -1,8 +1,8 @@
 # DeepSeek Harness Remote Workspace Viewer
 
 **Date:** 2026-08-17
-**Status:** In Progress
-**Last Updated:** 2026-08-17 06:23 EDT
+**Status:** Complete
+**Last Updated:** 2026-08-17 07:34 EDT
 **Blocked Reason:** None
 **Agent:** `chip`
 
@@ -147,9 +147,9 @@ Housekeeping truth recorded during implementation:
 - `/home/derrick/.openclaw/workspace/projects/deepseek-harness/apps/web/.artifacts/workspace-viewer-qa-2026-08-17/01-overlay-open.png`
 - `/home/derrick/.openclaw/workspace/projects/deepseek-harness/apps/web/.artifacts/workspace-viewer-qa-2026-08-17/failure.png`
 
-**Status:** ❌ Failed
+**Status:** ✅ Complete
 
-**Results:** The required remote/mobile-style HTTPS QA path still fails in the actual DSH surface, so Bead `oc-w2s` must remain open.
+**Results:** The rerun of the required remote/mobile-style HTTPS QA path now passes on the actual DSH surface after the shipped artifact rebuild, so Bead `oc-w2s` is closed and ready for audit handoff.
 
 - Exact URL/path exercised:
   - `https://derrick-surface-pro-8.tail613fcb.ts.net/`
@@ -191,12 +191,61 @@ Housekeeping truth recorded during implementation:
   - Source is patched: `plugins/openclaw-workspace-file-viewer/src/client/index.ts` now injects `['slots', 'locale', 'remote', 'remote.workspaceFileViewer']`.
   - Built browser artifacts are stale: both `plugins/openclaw-workspace-file-viewer/lib/client.js` and `plugins/openclaw-workspace-file-viewer/lib/types/client/index.js` still export `inject = ['slots', 'locale', 'remote']`.
   - The live DSH web surface serves the stale built browser artifact, so the actual HTTPS path still reproduces the original inject failure even after the source edit landed.
-- Bead truth:
-  - `oc-w2s` failed QA and should stay open until the shipped browser artifact is rebuilt and the live HTTPS surface is re-verified.
+- Rerun pass after `oc-w1i`:
+  - QA reran against `https://derrick-surface-pro-8.tail613fcb.ts.net/` and verified the full viewer path end to end.
+  - Confirmed behavior:
+    - file explorer root loaded
+    - `projects` expanded
+    - `projects/deepseek-harness` expanded
+    - `projects/deepseek-harness/README.md` opened as readable markdown
+    - readability probes `DeepSeek Harness`, `developer preview`, and `Run from source` were all visible
+  - In-scope warnings/errors: none. The final evidence run recorded `eventCount: 0` across console, page errors, failed requests, and HTTP `>=400` responses during the validated viewer flow.
+  - Evidence saved under `/tmp/oc-w2s-qa/`:
+    - `01-root-loaded.png`
+    - `02-directory-expanded.png`
+    - `03-readme-open.png`
+    - `evidence.json`
+  - Out-of-scope noise remains:
+    - a pre-existing `Gateway Handshake` dialog on load with endpoint `ws://127.0.0.1:18789/ws`
+    - it did not block the viewer path and produced no in-scope errors for this bead
+  - Bead truth:
+    - `oc-w2s` is now closed with QA evidence and hands off to final audit Bead `oc-9f7`.
 
 ---
 
-### Task 4: Independent Audit And Closure
+### Task 4: Rebuild Shipped Client Artifacts
+
+**Bead ID:** `oc-w1i`
+**SubAgent:** `primary`
+**Role:** `coder`
+**References:** `REF-04`, `REF-05`, `REF-07`
+**Prompt:** Claim the assigned bead on start. Read `/home/derrick/.openclaw/workspace/projects/deepseek-harness/README.md` first, then regenerate only the shipped browser-facing artifacts needed for `@openclaw/dsh-workspace-file-viewer` so the live DSH surface serves the repaired inject contract. Run the narrow relevant build/test checks for the touched plugin/package, keep the worktree clean except for the intended artifact updates, then commit and push the current branch and hand back to QA.
+
+**Folders Created/Deleted/Modified:**
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/`
+
+**Files Created/Deleted/Modified:**
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/lib/client.js`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/lib/types/client/index.js`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/.plans/2026-08-17-dsh-remote-workspace-viewer.md`
+
+**Status:** ✅ Complete
+
+**Results:** Regenerated the shipped browser-facing artifacts and committed them in `7c8aec091d0e893a33ef1bb7a20b202643facdac` (`fix(workspace-file-viewer): ship rebuilt browser artifacts`).
+
+- Rebuilt files now verified to carry the repaired inject contract:
+  - `plugins/openclaw-workspace-file-viewer/lib/client.js`
+  - `plugins/openclaw-workspace-file-viewer/lib/types/client/index.js`
+- Verified both generated outputs now include `remote.workspaceFileViewer` alongside `slots`, `locale`, and `remote`.
+- Narrow relevant validation rerun locally by the orchestrator:
+  - `pnpm exec vitest run plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts`
+  - Result: `1` file / `5` tests passed.
+- Commit is present on both `derrick/master` and `derrick/dsh-chip-workspace-file-viewer`, and the repo worktree is clean except for this active plan file.
+- Next action is to rerun the original remote/mobile-style QA bead `oc-w2s` against the live HTTPS DSH surface now that the served browser artifact should match the landed source fix.
+
+---
+
+### Task 5: Independent Audit And Closure
 
 **Bead ID:** `oc-9f7`
 **SubAgent:** `primary`
@@ -210,9 +259,80 @@ Housekeeping truth recorded during implementation:
 **Files Created/Deleted/Modified:**
 - `/home/derrick/.openclaw/workspace/projects/deepseek-harness/.plans/2026-08-17-dsh-remote-workspace-viewer.md`
 
+**Status:** ✅ Complete
+
+**Results:** Audit completed and Bead `oc-9f7` is now closed. The auditor verified the final evidence chain end to end:
+
+- source fix `ee0f382f373b216fd5e22ef1f8ffef71c3bd0143` adds only `remote.workspaceFileViewer` to the browser-half inject list and expands focused coverage for the `roots`, `list`, and `read` adapters
+- shipped artifact rebuild `7c8aec091d0e893a33ef1bb7a20b202643facdac` brings the served browser-facing outputs in `lib/` back into parity with the repaired source inject contract
+- follow-up regression fix `5133130f4bed890b64cc6841eec3b43020640822` adds the missing `WorkspaceFileViewerInjected` type import in the client spec without changing runtime behavior
+- QA bead `oc-w2s` already proved the live HTTPS DSH path can load roots, browse `projects/deepseek-harness`, and open `README.md` with no in-scope errors
+- final focused audit reruns also passed:
+  - `pnpm exec vitest run plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts`
+  - `pnpm exec tsc -p tsconfig.client.json --pretty false`
+
+- Orchestrator re-verification after the follow-up fix:
+  - `pnpm exec vitest run plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts`
+  - Result: passed (`1` file, `5` tests).
+  - `pnpm exec tsc -p tsconfig.client.json --pretty false`
+  - Result: passed with no output.
+- Branch truth:
+  - `HEAD` is `5133130f4bed890b64cc6841eec3b43020640822`
+  - `derrick/dsh-chip-workspace-file-viewer` matches `HEAD`
+- Next action:
+  - None. Audit closed the work with reason: `Audited source fix ee0f382f37, shipped artifact rebuild 7c8aec091d, and follow-up type import fix 5133130f4b; current source and built files both inject remote.workspaceFileViewer, focused vitest and client tsc pass, and oc-w2s QA proved live HTTPS roots/list/read/README flow with no in-scope errors`.
+
+---
+
+## Final Results
+
+**Status:** ✅ Complete
+
+**What We Built:** Repaired the OpenClaw DSH workspace file viewer so the remote/mobile-accessible DSH surface can inject and use `remote.workspaceFileViewer` correctly, then rebuilt the shipped browser artifacts so the live app serves the same repaired contract.
+
+**Reference Check:** `REF-04`, `REF-05`, `REF-06`, and `REF-07` were satisfied by the narrow plugin source fix, the rebuilt shipped client outputs, and the focused client test coverage. `REF-08` and `REF-09` remained contextual for reproducing the mobile-access path and separating the DSH-vs-Nerve route issue from the actual plugin defect.
+
+**Commits:**
+- `ee0f382f373b216fd5e22ef1f8ffef71c3bd0143` - `fix(workspace-file-viewer): inject remote namespace`
+- `7c8aec091d0e893a33ef1bb7a20b202643facdac` - `fix(workspace-file-viewer): ship rebuilt browser artifacts`
+- `5133130f4bed890b64cc6841eec3b43020640822` - `Fix workspace file viewer client spec type import`
+
+**Lessons Learned:** The visible runtime fix was only half the story because DSH was still serving stale built browser artifacts. For this repo, any browser-half plugin fix that ships compiled `lib/` outputs needs both source validation and a served-artifact parity check before QA can pass.
+
+*Completed on 2026-08-17*
+
+**Status:** ❌ Failed
+
+**Results:** Independent audit is underway on Bead `oc-9f7`, but its first pass exposed a new narrow follow-up seam instead of cleanly closing the work.
+
+- Audit truth discovered since the previous plan update:
+  - QA evidence for the live HTTPS/mobile-style DSH route passed and remains valid.
+  - The narrow source fix and shipped artifact rebuild are both landed and pushed.
+  - A full-repo build follow-up bug was discovered during audit: `plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts` now references a missing `WorkspaceFileViewerInjected` type.
+  - Repo-local Bead `oc-o7w` was created as a `discovered-from` child of `oc-9f7` to repair that build break before audit closure.
+- Current audit gate:
+  - `oc-9f7` cannot close yet because the plan requires a durable fix, and the new type regression means the change is not yet clean against the broader repo build surface.
+
+---
+
+### Task 6: Repair The Audit-Discovered Build Regression
+
+**Bead ID:** `oc-o7w`
+**SubAgent:** `primary`
+**Role:** `coder`
+**References:** `REF-05`, `REF-07`
+**Prompt:** Claim the assigned bead on start. Read `/home/derrick/.openclaw/workspace/projects/deepseek-harness/README.md` first, then repair the audit-discovered full-build regression in `plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts` caused by the missing `WorkspaceFileViewerInjected` type reference. Keep the fix minimal, rerun the narrow failing build/test surface that proves the regression is gone, commit, and push the current branch for renewed audit.
+
+**Folders Created/Deleted/Modified:**
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/`
+
+**Files Created/Deleted/Modified:**
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/.plans/2026-08-17-dsh-remote-workspace-viewer.md`
+
 **Status:** ⏳ Pending
 
-**Results:** Repo-local Bead `oc-9f7` is the live audit follow-on and remains blocked on `oc-w2s`.
+**Results:** Bead `oc-o7w` is the newly exposed narrow housekeeping seam from audit. Once it lands, Bead `oc-9f7` should rerun independent audit against the repaired build surface and the already-passing HTTPS viewer evidence.
 
 ---
 
@@ -220,14 +340,15 @@ Housekeeping truth recorded during implementation:
 
 **Status:** ⚠️ Partial
 
-**What We Built:** Active execution plan plus the repo-local Bead chain for reproduction, implementation, QA, and audit. Source-level fix landed, but the live DSH web surface still serves a stale workspace-file-viewer browser artifact, so the reproduced HTTPS user path remains broken.
+**What We Built:** Active execution plan plus the repo-local Bead chain for reproduction, implementation, rebuild, QA, audit, and the new audit-discovered cleanup seam. Both the source-level inject repair and the shipped browser-artifact rebuild are landed and pushed, and the live HTTPS DSH surface now passes the full workspace-viewer QA path. Final closure is waiting on the narrow build-regression repair and renewed audit.
 
-**Reference Check:** `REF-01` through `REF-09` were gathered to scope the issue. `REF-05`, `REF-08`, and `REF-09` now explain the reproduced symptom: the phone-reachable surface changed with the launcher wrapper, but the actual viewer failure is the browser-half `remote.workspaceFileViewer` inject omission in `REF-05`.
+**Reference Check:** `REF-01` through `REF-09` were gathered to scope the issue. `REF-05`, `REF-08`, and `REF-09` explain the reproduced symptom: the phone-reachable surface changed with the launcher wrapper, while the actual viewer failure came from the browser-half `remote.workspaceFileViewer` inject omission and then from stale shipped browser artifacts.
 
 **Commits:**
 - `ee0f382f37` — `fix(workspace-file-viewer): inject remote namespace`
+- `7c8aec091d` — `fix(workspace-file-viewer): ship rebuilt browser artifacts`
 
-**Lessons Learned:** The original symptom was easy to misattribute to Nerve because both systems expose remote workspace/file surfaces. The decisive discriminator is that the report happened specifically while `dsh` was reachable and mentioned the DSH plugin. The follow-on QA result adds one more constraint: fixing only `src/client/index.ts` is insufficient for the live web surface when the served bundle still comes from stale `lib/` browser artifacts.
+**Lessons Learned:** The original symptom was easy to misattribute to Nerve because both systems expose remote workspace/file surfaces. The decisive discriminator is that the report happened specifically while `dsh` was reachable and mentioned the DSH plugin. The follow-on QA result proved the repair had two layers: source correction and the shipped browser bundle actually served by the live web surface. The audit phase also confirmed that narrow viewer fixes can still leave broader build hygiene regressions, so the plan needs one more tight cleanup pass before true closure.
 
 ---
 
