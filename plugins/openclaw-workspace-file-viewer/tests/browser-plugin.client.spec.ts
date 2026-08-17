@@ -40,7 +40,7 @@ async function bench(): Promise<{
     $on: () => () => {},
     workspaceFileViewer: { roots, list, read },
   } as never)
-  ctx.provide('remote.workspaceFileViewer', {} as never)
+  ctx.provide('remote.workspaceFileViewer', { roots, list, read } as never)
   ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
   ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
   await ctx.plugin({ inject: localeInject, apply: applyLocale }).await()
@@ -51,7 +51,7 @@ async function bench(): Promise<{
 
 describe('ui-workspace-file-viewer browser half', () => {
   it('declares the services it binds', () => {
-    expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.workspaceFileViewer'])
+    expect(inject).toEqual(['slots', 'locale', 'remote'])
   })
 
   it('registers sidebar and overlay entries and removes them on teardown', async () => {

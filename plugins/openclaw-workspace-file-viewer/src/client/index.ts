@@ -23,26 +23,31 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
-/** Services required for the Remote-backed overlay and sidebar action. */
-export const inject = ['slots', 'locale', 'remote', 'remote.workspaceFileViewer']
+/** Services required before this plugin can mount its own Remote namespace and UI. */
+export const inject = ['slots', 'locale', 'remote']
 
 /** Mount the package Remote contribution, sidebar action, and shell overlay. */
 export async function apply(ctx: ClientContext): Promise<void> {
   await ctx.remote.$mount(workspaceFileViewerRemote)
+  const remote = (): NonNullable<ClientContext['remote']['workspaceFileViewer']> => {
+    const namespace = ctx.get('remote.workspaceFileViewer') as ClientContext['remote']['workspaceFileViewer'] | undefined
+    if (namespace === undefined) throw new Error('workspaceFileViewer Remote namespace is unavailable')
+    return namespace
+  }
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace-file-viewer: dictionaries')
   const injected = (): WorkspaceFileViewerInjected => ({
     roots: async () => {
-      const result = await ctx.remote.workspaceFileViewer.roots()
+      const result = await remote().roots()
       if (!result.ok) throw new Error(result.error.message)
       return result.value
     },
     list: async (rootId, path) => {
-      const result = await ctx.remote.workspaceFileViewer.list(rootId, path)
+      const result = await remote().list(rootId, path)
       if (!result.ok) throw new Error(result.error.message)
       return result.value
     },
     read: async (rootId, path) => {
-      const result = await ctx.remote.workspaceFileViewer.read(rootId, path)
+      const result = await remote().read(rootId, path)
       if (!result.ok) throw new Error(result.error.message)
       return result.value
     },

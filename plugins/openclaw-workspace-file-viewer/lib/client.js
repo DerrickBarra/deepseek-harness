@@ -4211,29 +4211,29 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			document.head.appendChild(tag);
 		}
 		var WorkspaceFileViewerPanel_module_css_default = {
-			"actionButtonRail": "ZprdQa_actionButtonRail",
-			"iconButton": "ZprdQa_iconButton",
-			"rootSelect": "ZprdQa_rootSelect",
-			"overlay": "ZprdQa_overlay",
-			"name": "ZprdQa_name",
-			"notice": "ZprdQa_notice",
-			"error": "ZprdQa_error",
-			"header": "ZprdQa_header",
-			"crumb": "ZprdQa_crumb",
-			"actionLabel": "ZprdQa_actionLabel",
-			"backdrop": "ZprdQa_backdrop",
-			"list": "ZprdQa_list",
-			"meta": "ZprdQa_meta",
-			"browser": "ZprdQa_browser",
-			"body": "ZprdQa_body",
-			"fileTitle": "ZprdQa_fileTitle",
-			"plain": "ZprdQa_plain",
-			"row": "ZprdQa_row",
-			"panel": "ZprdQa_panel",
-			"breadcrumbs": "ZprdQa_breadcrumbs",
 			"title": "ZprdQa_title",
+			"header": "ZprdQa_header",
+			"breadcrumbs": "ZprdQa_breadcrumbs",
+			"fileTitle": "ZprdQa_fileTitle",
+			"crumb": "ZprdQa_crumb",
+			"overlay": "ZprdQa_overlay",
+			"browser": "ZprdQa_browser",
 			"viewer": "ZprdQa_viewer",
-			"actionButton": "ZprdQa_actionButton"
+			"plain": "ZprdQa_plain",
+			"actionLabel": "ZprdQa_actionLabel",
+			"panel": "ZprdQa_panel",
+			"rootSelect": "ZprdQa_rootSelect",
+			"actionButtonRail": "ZprdQa_actionButtonRail",
+			"name": "ZprdQa_name",
+			"backdrop": "ZprdQa_backdrop",
+			"error": "ZprdQa_error",
+			"actionButton": "ZprdQa_actionButton",
+			"iconButton": "ZprdQa_iconButton",
+			"row": "ZprdQa_row",
+			"notice": "ZprdQa_notice",
+			"meta": "ZprdQa_meta",
+			"body": "ZprdQa_body",
+			"list": "ZprdQa_list"
 		};
 		//#endregion
 		//#region src/client/WorkspaceFileViewerPanel.tsx
@@ -4530,33 +4530,37 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#endregion
 		//#region src/client/index.ts
 		/** Workspace file viewer UI plugin, browser half. */
-		/** Services required for the Remote-backed overlay and sidebar action. */
+		/** Services required before this plugin can mount its own Remote namespace and UI. */
 		const inject = [
 			"slots",
 			"locale",
-			"remote",
-			"remote.workspaceFileViewer"
+			"remote"
 		];
 		/** Mount the package Remote contribution, sidebar action, and shell overlay. */
 		async function apply(ctx) {
 			await ctx.remote.$mount(TYPERT_REMOTE);
+			const remote = () => {
+				const namespace = ctx.get("remote.workspaceFileViewer");
+				if (namespace === void 0) throw new Error("workspaceFileViewer Remote namespace is unavailable");
+				return namespace;
+			};
 			ctx.effect(() => ctx.locale.register(NS, {
 				zh,
 				en
 			}), "ui-workspace-file-viewer: dictionaries");
 			const injected = () => ({
 				roots: async () => {
-					const result = await ctx.remote.workspaceFileViewer.roots();
+					const result = await remote().roots();
 					if (!result.ok) throw new Error(result.error.message);
 					return result.value;
 				},
 				list: async (rootId, path) => {
-					const result = await ctx.remote.workspaceFileViewer.list(rootId, path);
+					const result = await remote().list(rootId, path);
 					if (!result.ok) throw new Error(result.error.message);
 					return result.value;
 				},
 				read: async (rootId, path) => {
-					const result = await ctx.remote.workspaceFileViewer.read(rootId, path);
+					const result = await remote().read(rootId, path);
 					if (!result.ok) throw new Error(result.error.message);
 					return result.value;
 				}
