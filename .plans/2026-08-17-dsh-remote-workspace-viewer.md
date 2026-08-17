@@ -138,14 +138,61 @@ Housekeeping truth recorded during implementation:
 **Prompt:** Claim the assigned bead on start. Read `/home/derrick/.openclaw/workspace/projects/deepseek-harness/README.md` first. After the fix is pushed, validate the plugin in the actual DSH web surface, including the remote/mobile-access path if available. Confirm the sidebar action opens, roots load, directory listing works, and a readable text/markdown file opens without console or transport errors. Report the exact evidence and fail on unexpected warnings/errors.
 
 **Folders Created/Deleted/Modified:**
-- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/.plans/`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/apps/web/.artifacts/workspace-viewer-qa-2026-08-17/`
 
 **Files Created/Deleted/Modified:**
 - `/home/derrick/.openclaw/workspace/projects/deepseek-harness/.plans/2026-08-17-dsh-remote-workspace-viewer.md`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/apps/web/.artifacts/workspace-viewer-qa-2026-08-17/result.json`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/apps/web/.artifacts/workspace-viewer-qa-2026-08-17/01-overlay-open.png`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/apps/web/.artifacts/workspace-viewer-qa-2026-08-17/failure.png`
 
-**Status:** ⏳ Pending
+**Status:** ❌ Failed
 
-**Results:** Repo-local Bead `oc-w2s` is the live QA follow-on and remains blocked on `oc-78l`.
+**Results:** The required remote/mobile-style HTTPS QA path still fails in the actual DSH surface, so Bead `oc-w2s` must remain open.
+
+- Exact URL/path exercised:
+  - `https://derrick-surface-pro-8.tail613fcb.ts.net/`
+  - Viewer path attempted: `OpenClaw workspace -> projects -> deepseek-harness -> README.md`
+- Exact commands run:
+  - `bd update oc-w2s --status in_progress --json`
+  - `git status --short --branch`
+  - `bd show oc-w2s --json`
+  - `sed -n '1,260p' AGENTS.md`
+  - `sed -n '1,260p' /home/derrick/.openclaw/workspace/skills/desktop-control/SKILL.md`
+  - `sed -n '1,260p' /home/derrick/.openclaw/workspace/skills/tmux/SKILL.md`
+  - `rg -n "playwright|Workspace files|workspace file viewer|Open workspace file browser|remote.workspaceFileViewer|tail613fcb|tailscale serve|roots\\(" -S .`
+  - `rg --files . | rg 'playwright|e2e|workspace-file-viewer|browser-plugin|dsh.sh|tail'`
+  - `sed -n '1,240p' apps/web/tests/workspace-file-viewer.e2e.ts`
+  - `sed -n '1,240p' apps/web/tests/support.ts`
+  - `sed -n '1,260p' apps/web/tests/scaffold.ts`
+  - `sed -n '1,260p' /home/derrick/.openclaw/workspace/scripts/dsh.sh`
+  - `tailscale serve status`
+  - `curl -Ik https://derrick-surface-pro-8.tail613fcb.ts.net/`
+  - `curl -s http://127.0.0.1:3080/ | sed -n '1,220p'`
+  - `curl -s http://127.0.0.1:3081/ | sed -n '1,220p'`
+  - `env DSH_TAILSCALE_SERVE=1 DSH_PORT=3081 /home/derrick/.openclaw/workspace/scripts/dsh.sh`
+  - `pnpm exec tsx <<'EOF' ... EOF` from `apps/web/` to drive Playwright against the HTTPS route and capture `result.json` plus screenshots
+  - `sed -n '1,120p' plugins/openclaw-workspace-file-viewer/src/client/index.ts`
+  - `git log --oneline --decorate -n 5`
+  - `rg -n "remote\\.workspaceFileViewer|without inject|workspace-file-viewer" apps/web/dist plugins/openclaw-workspace-file-viewer/lib -S`
+  - `sed -n '4536,4568p' plugins/openclaw-workspace-file-viewer/lib/client.js`
+  - `sed -n '1,80p' plugins/openclaw-workspace-file-viewer/lib/types/client/index.js`
+- Browser/UI evidence:
+  - The DSH page loaded at the MagicDNS HTTPS URL with `document.title === "DeepSeek Harness"`.
+  - `window.__DSH_BOOT__.entries` included `@openclaw/dsh-workspace-file-viewer`, proving the plugin row loaded into the browser composition.
+  - The sidebar button with label `Open workspace file browser` rendered and opened the `Workspace files` overlay.
+  - The overlay immediately rendered the original failure text: `Could not load: cannot get property "remote.workspaceFileViewer" without inject`.
+  - Because the overlay failed before data load, `roots()` never completed, no directory listing rendered, and no file could be opened. Screenshots: `apps/web/.artifacts/workspace-viewer-qa-2026-08-17/01-overlay-open.png` and `apps/web/.artifacts/workspace-viewer-qa-2026-08-17/failure.png`.
+- Console/network evidence and blocker judgment:
+  - The page still emitted pre-existing `403` fetch errors for `api/credentials.describe`, `codex-subscription/preferences/status`, and `api/settings.describe`. These matched the earlier repro and did not change when the viewer button was clicked, so they remain out-of-scope noise rather than the deciding blocker for this bead.
+  - The in-scope blocker is the same runtime failure in the required viewer path: the overlay cannot read `ctx.remote.workspaceFileViewer`, so the remote roots/list/read flow never starts.
+- Root-cause evidence for the failed QA:
+  - Source is patched: `plugins/openclaw-workspace-file-viewer/src/client/index.ts` now injects `['slots', 'locale', 'remote', 'remote.workspaceFileViewer']`.
+  - Built browser artifacts are stale: both `plugins/openclaw-workspace-file-viewer/lib/client.js` and `plugins/openclaw-workspace-file-viewer/lib/types/client/index.js` still export `inject = ['slots', 'locale', 'remote']`.
+  - The live DSH web surface serves the stale built browser artifact, so the actual HTTPS path still reproduces the original inject failure even after the source edit landed.
+- Bead truth:
+  - `oc-w2s` failed QA and should stay open until the shipped browser artifact is rebuilt and the live HTTPS surface is re-verified.
 
 ---
 
@@ -173,14 +220,14 @@ Housekeeping truth recorded during implementation:
 
 **Status:** ⚠️ Partial
 
-**What We Built:** Active execution plan plus the repo-local Bead chain for reproduction, implementation, QA, and audit.
+**What We Built:** Active execution plan plus the repo-local Bead chain for reproduction, implementation, QA, and audit. Source-level fix landed, but the live DSH web surface still serves a stale workspace-file-viewer browser artifact, so the reproduced HTTPS user path remains broken.
 
 **Reference Check:** `REF-01` through `REF-09` were gathered to scope the issue. `REF-05`, `REF-08`, and `REF-09` now explain the reproduced symptom: the phone-reachable surface changed with the launcher wrapper, but the actual viewer failure is the browser-half `remote.workspaceFileViewer` inject omission in `REF-05`.
 
 **Commits:**
-- `ee0f382f3758d9d70b921607633f060c53efc3cf` — `fix(workspace-file-viewer): inject remote namespace`
+- `ee0f382f37` — `fix(workspace-file-viewer): inject remote namespace`
 
-**Lessons Learned:** The original symptom was easy to misattribute to Nerve because both systems expose remote workspace/file surfaces. The decisive discriminator is that the report happened specifically while `dsh` was reachable and mentioned the DSH plugin.
+**Lessons Learned:** The original symptom was easy to misattribute to Nerve because both systems expose remote workspace/file surfaces. The decisive discriminator is that the report happened specifically while `dsh` was reachable and mentioned the DSH plugin. The follow-on QA result adds one more constraint: fixing only `src/client/index.ts` is insufficient for the live web surface when the served bundle still comes from stale `lib/` browser artifacts.
 
 ---
 
