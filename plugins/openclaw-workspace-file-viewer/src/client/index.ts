@@ -24,7 +24,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** Services required for the Remote-backed overlay and sidebar action. */
-export const inject = ['slots', 'locale', 'remote']
+export const inject = ['slots', 'locale', 'remote', 'remote.workspaceFileViewer']
 
 /** Mount the package Remote contribution, sidebar action, and shell overlay. */
 export async function apply(ctx: ClientContext): Promise<void> {
