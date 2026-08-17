@@ -1,0 +1,4 @@
+# OpenClaw Workspace Folder viewer profile bundle.
+- insert:
+    - id: openclaw-workspace-file-viewer
+      name: '@openclaw/dsh-workspace-file-viewer'

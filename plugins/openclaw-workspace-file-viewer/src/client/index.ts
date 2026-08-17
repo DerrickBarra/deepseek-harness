@@ -1,5 +1,7 @@
 /** Workspace file viewer UI plugin, browser half. */
 
+import workspaceFileViewerRemote from '@openclaw/dsh-workspace-file-viewer/remote'
+import type {} from '@openclaw/dsh-workspace-file-viewer/remote'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
@@ -22,10 +24,11 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** Services required for the Remote-backed overlay and sidebar action. */
-export const inject = ['slots', 'locale', 'remote', 'remote.workspaceFileViewer']
+export const inject = ['slots', 'locale', 'remote']
 
-/** Register the sidebar action and shell overlay. */
-export function apply(ctx: ClientContext): void {
+/** Mount the package Remote contribution, sidebar action, and shell overlay. */
+export async function apply(ctx: ClientContext): Promise<void> {
+  await ctx.remote.$mount(workspaceFileViewerRemote)
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace-file-viewer: dictionaries')
   const injected = (): WorkspaceFileViewerInjected => ({
     roots: async () => {

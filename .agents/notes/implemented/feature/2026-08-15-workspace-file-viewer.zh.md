@@ -12,9 +12,9 @@ Web UI 可以创建和浏览 DSH 工作区，但没有一个小型本地文件�
 
 ## Decision
 
-查看器作为两个普通 Cordis 插件由 Web 组合包挂载。`@deepseek-ai/dsh-host-workspace-file-viewer` 拥有宿主 Remote 命名空间 `workspaceFileViewer`，提供 `roots`、`list` 和 `read`。它的 `roots` 配置是已存在目录的 allowlist，默认值为 `/home/derrick/.openclaw/workspace/`；`maxFileBytes` 默认值为 262144。该服务用 `realpath` 规范化配置根，只接受相对请求路径，在使用前再次用 `realpath` 解析最终目标，并拒绝离开所选根的遍历或符号链接目标。目录列表包含普通目录和文件，把受支持文本扩展名标为可读，并让目录排在文件前面。文件读取要求受支持文本扩展名、普通文件和配置的字节上限。
+查看器作为可安装的 DSH profile bundle `@openclaw/dsh-workspace-file-viewer` 发布，而不是由内置 Web 组合包挂载。该包声明指向自身 `cordis.patch.yml` 的 `dsh.bundle.patch`；该 patch 插入 `openclaw-workspace-file-viewer` 行，其宿主半部拥有 Remote 命名空间 `workspaceFileViewer`，提供 `roots`、`list` 和 `read`。它的 `roots` 配置是已存在目录的 allowlist，默认值为 `/home/derrick/.openclaw/workspace/`；`maxFileBytes` 默认值为 262144。该服务用 `realpath` 规范化配置根，只接受相对请求路径，在使用前再次用 `realpath` 解析最终目标，并拒绝离开所选根的遍历或符号链接目标。目录列表包含普通目录和文件，把受支持文本扩展名标为可读，并让目录排在文件前面。文件读取要求受支持文本扩展名、普通文件和配置的字节上限。
 
-`@deepseek-ai/dsh-client-ui-workspace-file-viewer` 注册一个 `sidebar.footer.action` 按钮和一个 `shell.overlay` 面板。面板调用 `ctx.remote.workspaceFileViewer`，通过现有 `MarkdownText` primitive 渲染 Markdown，并在 `<pre>` 中渲染纯文本，因此类似 HTML 的内容会被 React 转义。客户端不保留持久文件浏览状态，也不写入会话事件，因为该功能只属于浏览器 chrome；没有内容进入模型请求。
+同一个包的浏览器半部挂载生成的 Remote contribution，注册一个 `sidebar.footer.action` 按钮和一个 `shell.overlay` 面板。面板调用 `ctx.remote.workspaceFileViewer`，通过现有 `MarkdownText` primitive 渲染 Markdown，并在 `<pre>` 中渲染纯文本，因此类似 HTML 的内容会被 React 转义。客户端不保留持久文件浏览状态，也不写入会话事件，因为该功能只属于浏览器 chrome；没有内容进入模型请求。
 
 HTML 渲染预览保持延期。这些包把 `.html` 列为可读文本，但渲染预览需要 iframe/CSP/sandbox 设计，防止本地内容执行有应用权限的代码或扩大文件系统访问。本工作作为 OpenClaw 后续 bead 跟踪，而不是藏在一个不完整实现里。
 
@@ -30,7 +30,7 @@ HTML 渲染预览保持延期。这些包把 `.html` 列为可读文本，但渲
 
 ## Consequences
 
-Web 组合包现在默认挂载一个额外的宿主 Remote 和客户端 UI 插件。默认根有意针对 OpenClaw Chip spike 的部署；不需要该路径的部署可以在 `cordis.patch.yml` 中覆盖或替换 `workspace-file-viewer` 配置项。
+内置 Web 组合包不再挂载查看器。OpenClaw 部署通过 `dsh plugin --profile web add ./plugins/openclaw-workspace-file-viewer` 或等价包 spec 启用它，之后 profile 或 home patch 可以替换 `openclaw-workspace-file-viewer` 行配置。默认根有意针对 OpenClaw Chip spike 的部署。
 
 API 表面很窄：三个 Remote 方法，负责 allowlist 下的本地文本读取。但它仍然是本地文件暴露表面，所以未来变更必须把路径检查保留在解析并读取文件的宿主服务操作中。客户端过滤、禁用行或扩展名检查本身不是 enforcement。
 

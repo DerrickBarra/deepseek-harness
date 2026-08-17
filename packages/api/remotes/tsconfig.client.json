@@ -37,9 +37,6 @@
       "path": "../../host/plugin-inventory"
     },
     {
-      "path": "../../host/workspace-file-viewer"
-    },
-    {
       "path": "../../interaction/commands"
     },
     {

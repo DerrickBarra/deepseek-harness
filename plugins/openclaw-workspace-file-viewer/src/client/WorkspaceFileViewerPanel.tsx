@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import type {
   WorkspaceFileViewerEntry, WorkspaceFileViewerFile, WorkspaceFileViewerListing,
   WorkspaceFileViewerRoot,
-} from '@deepseek-ai/dsh-host-workspace-file-viewer/types'
+} from '@openclaw/dsh-workspace-file-viewer/types'
 import {
   IconCloseOutline16, IconCodeOutline16, IconFolderClose16, IconFolderOpenOutline16,
   IconRefreshOutline16, MarkdownText, Tooltip,

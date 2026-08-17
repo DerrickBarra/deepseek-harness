@@ -6,6 +6,7 @@ import { HarnessError } from '@deepseek-ai/dsh-llm'
 import { carrierKeyOf } from '@deepseek-ai/dsh-scope'
 import SubagentRuntime, {
   foldSubagentDescriptor,
+  resolveChildAgentOptions,
   snapshotSubagentDescriptor,
   SUBAGENT_DESCRIPTOR_VERSION,
   SubagentError,
@@ -22,6 +23,28 @@ import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 
 function fakeParent(id = 'parent-1'): Agent {
   return { id: SessionId(id) } as unknown as Agent
+}
+
+function fakeParentWithRouteHistory(): Agent {
+  return {
+    id: SessionId('parent-route'),
+    options: { provider: 'deepseek-official', model: 'deepseek-v4-flash', maxTokens: 256000 },
+    session: {
+      events: [
+        {
+          type: 'request/header',
+          data: {
+            header: {
+              config: {
+                provider: 'openai-codex',
+                model: 'gpt-5.5',
+              },
+            },
+          },
+        },
+      ],
+    },
+  } as unknown as Agent
 }
 
 const ALL_CAPS: SubagentCapabilities = { outputSchema: true, depthLimit: true, toolFilter: true, persona: true }
@@ -69,6 +92,15 @@ async function service(): Promise<{ ctx: Context; subagents: SubagentRuntime }> 
 }
 
 describe('SubagentRuntime', () => {
+  it('inherits the parent latest request route when model selection changed after creation', () => {
+    expect(resolveChildAgentOptions(fakeParentWithRouteHistory(), undefined, 1)).toEqual({
+      provider: 'openai-codex',
+      model: 'gpt-5.5',
+      maxTokens: 256000,
+      subagentDepth: 1,
+    })
+  })
+
   it('registers, lists, looks up, starts, and removes providers', async () => {
     const { ctx, subagents } = await service()
     const added: string[] = []

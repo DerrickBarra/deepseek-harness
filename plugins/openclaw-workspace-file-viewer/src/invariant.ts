@@ -1,9 +1,9 @@
-/** Package-owned invariant companion for `@deepseek-ai/dsh-host-workspace-file-viewer`. */
+/** Package-owned invariant companion for `@openclaw/dsh-workspace-file-viewer`. */
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-host-workspace-file-viewer'
+const PACKAGE_NAME = '@openclaw/dsh-workspace-file-viewer'
 
 /** Invariant companion plugin name. */
 export const name = 'workspace-file-viewer-invariant'

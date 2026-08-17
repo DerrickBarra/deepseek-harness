@@ -75,12 +75,14 @@ describe('workspace file viewer web smoke', () => {
     writeFileSync(join(planDir, '2026-08-15-dsh-chip-spike.md'), '# DSH Chip Spike\n\n## Task 4\n\nValidated Markdown file viewer.\n')
     const patchPath = join(home, 'file-viewer.patch.yml')
     writeFileSync(patchPath, [
-      '- id: workspace-file-viewer',
-      '  config:',
-      '    roots:',
-      `      - path: ${JSON.stringify(root)}`,
-      '        label: Smoke workspace',
-      '    maxFileBytes: 65536',
+      '- insert:',
+      '    - id: openclaw-workspace-file-viewer',
+      "      name: '@openclaw/dsh-workspace-file-viewer'",
+      '      config:',
+      '        roots:',
+      `          - path: ${JSON.stringify(root)}`,
+      '            label: Smoke workspace',
+      '        maxFileBytes: 65536',
       '',
     ].join('\n'))
 

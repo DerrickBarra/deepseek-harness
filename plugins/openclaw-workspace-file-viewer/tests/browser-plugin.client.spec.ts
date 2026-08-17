@@ -5,7 +5,7 @@ import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
 import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
 import { apply as applyLocale, inject as localeInject } from '@deepseek-ai/dsh-client-locale/client'
 import { apply, inject } from '../src/client/index.ts'
-import { apply as applyNode } from '../src/index.ts'
+import WorkspaceFileViewerGateway from '../src/index.ts'
 import * as ViewerInvariant from '../src/invariant.ts'
 import { en, NS, zh } from '../src/client/locales.ts'
 
@@ -20,6 +20,7 @@ async function bench(): Promise<{ ctx: Context; fiber: ReturnType<Context['plugi
     },
   } as never, () => null)
   ctx.provide('remote', {
+    $mount: async () => async () => {},
     $on: () => () => {},
     workspaceFileViewer: {
       roots: async () => ({ ok: true, value: [] }),
@@ -38,7 +39,7 @@ async function bench(): Promise<{ ctx: Context; fiber: ReturnType<Context['plugi
 
 describe('ui-workspace-file-viewer browser half', () => {
   it('declares the services it binds', () => {
-    expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.workspaceFileViewer'])
+    expect(inject).toEqual(['slots', 'locale', 'remote'])
   })
 
   it('registers sidebar and overlay entries and removes them on teardown', async () => {
@@ -64,8 +65,8 @@ describe('ui-workspace-file-viewer browser half', () => {
 })
 
 describe('ui-workspace-file-viewer node half and invariant', () => {
-  it('contributes no host behavior and registers an empty invariant companion', async () => {
-    expect(applyNode).not.toThrow()
+  it('exports the host Remote service and registers an empty invariant companion', async () => {
+    expect(WorkspaceFileViewerGateway.name).toBe('WorkspaceFileViewerGateway')
     const ctx = new Context()
     await ctx.plugin(InvariantRegistry, { enabled: true })
     const fiber = ctx.plugin(ViewerInvariant)

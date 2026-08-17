@@ -23,6 +23,9 @@
     "packages/*/*/tests/**/*.client.spec.tsx",
     "packages/*/*/tests/**/*.client.tsx",
     "packages/*/*/tests/**/*.client.ts",
+    "plugins/*/src/css-modules.d.ts",
+    "plugins/*/tests/**/*.client.spec.ts",
+    "plugins/*/tests/**/*.client.spec.tsx",
     // Client package outside packages/client with a local CSS module face.
     "packages/extensions/ui-cordis/src/css-modules.d.ts",
     "packages/client/tsdown.client.ts",
@@ -69,7 +72,6 @@
     { "path": "./packages/client/ui-deliverables" },
     { "path": "./packages/client/ui-workflow-run" },
     { "path": "./packages/client/ui-workspace" },
-    { "path": "./packages/client/ui-workspace-file-viewer" },
     { "path": "./packages/client/ui-input-trigger" },
     { "path": "./packages/client/ui-commands" },
     { "path": "./packages/client/ui-skill" },
@@ -94,6 +96,7 @@
     { "path": "./packages/client/ui-settings-plugin-inventory" },
     { "path": "./packages/client/locale" },
     { "path": "./packages/client/web" },
-    { "path": "./apps/web" }
+    { "path": "./apps/web" },
+    { "path": "./plugins/openclaw-workspace-file-viewer/tsconfig.client.json" }
   ]
 }
