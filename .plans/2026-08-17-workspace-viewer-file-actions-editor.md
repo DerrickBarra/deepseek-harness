@@ -188,14 +188,20 @@ Validation commands run:
 ```sh
 pnpm exec tsc -b plugins/openclaw-workspace-file-viewer/tsconfig.json plugins/openclaw-workspace-file-viewer/tsconfig.client.json
 pnpm exec vitest run plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx
-pnpm exec oxlint plugins/openclaw-workspace-file-viewer/src/client plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx
+pnpm exec oxlint plugins/openclaw-workspace-file-viewer/src/client/index.ts plugins/openclaw-workspace-file-viewer/src/client/WorkspaceFileViewerPanel.tsx plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx
 pnpm --filter @openclaw/dsh-workspace-file-viewer run bundle
+pnpm exec vitest run plugins/openclaw-workspace-file-viewer/tests/workspace-file-viewer.spec.ts plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx plugins/openclaw-workspace-file-viewer/tests/invariant.spec.ts
+git diff --check
 pnpm run verify-agent-note-format
-pnpm run verify-translation-pairing .agents/notes/implemented/bug-fix/2026-08-17-workspace-viewer-add-to-chat-session.md
-git push derrick HEAD:dsh-chip-workspace-file-viewer
+git fetch derrick dsh-chip-workspace-file-viewer
+git push --force-with-lease=dsh-chip-workspace-file-viewer:ea47f8c6597fbe18dd9d5ef39e03704ff3bba767 derrick HEAD:dsh-chip-workspace-file-viewer
+/home/derrick/.openclaw/workspace/projects/dsh-orchestration-agent/scripts/update.sh
+systemctl --user restart dsh-chip.service
+systemctl --user --no-pager --full status dsh-chip.service
+curl -k -I --max-time 10 https://derrick-surface-pro-8.tail613fcb.ts.net:8443/
 ```
 
-Results: typecheck passed; Vitest passed `2` files and `10` tests; oxlint passed; bundle rebuild passed and refreshed the shipped client artifacts; Agent Note format and translation pairing passed; push reported `Everything up-to-date` with local and remote both at `98035a8385d963d12dc5cb4799dd15e342792c52`. Vitest still emitted the existing `vite-tsconfig-paths` deprecation notice, and the bundle still emitted the existing unsupported optional `linux-arm64` package warning plus tsdown dependency option notices.
+Results: typecheck passed; the focused browser/panel Vitest run passed `2` files and `10` tests; oxlint passed; bundle rebuild passed and refreshed the shipped client artifacts; the post-bundle plugin Vitest run passed `4` files and `16` tests; `git diff --check` passed after removing generated trailing whitespace in `lib/client.js`; Agent Note format passed for `543` notes. The amended force-with-lease push succeeded with local and remote both at `98035a8385d963d12dc5cb4799dd15e342792c52`. `update.sh` completed with all post-run verification rows passing. `dsh-chip.service` restarted and reported `active (running)`. The immediate curl during startup returned HTTP `502`; the retry after the service logged `dsh web: http://127.0.0.1:3081` returned HTTP `200`. Vitest still emitted the existing `vite-tsconfig-paths` deprecation notice, and the bundle still emitted the existing unsupported optional `linux-arm64` package warning plus tsdown dependency option notices.
 
 Commit: `98035a8385` — `fix(workspace-file-viewer): create chat session before adding paths`
 
