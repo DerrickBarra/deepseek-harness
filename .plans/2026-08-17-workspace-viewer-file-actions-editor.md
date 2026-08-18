@@ -2,8 +2,8 @@
 
 **Date:** 2026-08-17
 **Status:** In Progress
-**Last Updated:** 2026-08-17 20:50 EDT
-**Blocked Reason:** QA found Add to chat does not insert into the visible chat draft when the served app has no active session.
+**Last Updated:** 2026-08-17 20:51 EDT
+**Blocked Reason:** None; remediation bead `oc-rmv` is active for the QA-discovered Add to chat failure.
 **Agent:** `chip`
 
 ---
@@ -149,11 +149,31 @@ Blocking failure:
 
 - Add to chat failed for both file and folder rows. Right-clicking `qa-workspace-viewer-test.md` and `plugins`, then choosing `Add to chat`, left the visible chat draft empty (`draft=""`). The panel showed `Could not load: No active chat session is available`. Expected inserted paths were `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-test.md` and `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins`.
 
-Bead `oc-qff` remains `in_progress`; audit bead `oc-0p2` is untouched.
+Bead `oc-qff` remains `in_progress`; audit bead `oc-0p2` is untouched. Follow-up remediation bead `oc-rmv` was created from this QA failure.
 
 ---
 
-### Task 3: Independent Audit And Closure
+### Task 3: Fix Add To Chat Without Active Session
+
+**Bead ID:** `oc-rmv`
+**SubAgent:** `primary`
+**Role:** `coder`
+**References:** `REF-02`, `REF-03`, `REF-06`
+**Prompt:** Claim the assigned bead on start. Read `/home/derrick/.openclaw/workspace/projects/deepseek-harness/README.md` first. Fix the workspace viewer `Add to chat` behavior so the served DSH app inserts the selected absolute file/folder path into the visible chat draft even when no active session exists yet. Keep the patch narrow, update focused client tests, rebuild shipped client artifacts if needed, run relevant validation, commit, push, and hand back to QA bead `oc-qff`.
+
+**Folders Created/Deleted/Modified:**
+- `Pending`
+
+**Files Created/Deleted/Modified:**
+- `Pending`
+
+**Status:** ⏳ Pending
+
+**Results:** Pending.
+
+---
+
+### Task 4: Independent Audit And Closure
 
 **Bead ID:** `oc-0p2`
 **SubAgent:** `primary`
