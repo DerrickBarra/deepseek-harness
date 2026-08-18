@@ -266,7 +266,27 @@ Commit: `98035a8385` — `fix(workspace-file-viewer): create chat session before
 
 ---
 
-### Task 4: Independent Audit And Closure
+### Task 4: Fix Visible Composer Insertion
+
+**Bead ID:** `oc-5wu`
+**SubAgent:** `primary`
+**Role:** `coder`
+**References:** `REF-02`, `REF-03`, `REF-06`
+**Prompt:** Claim the assigned bead on start. Read `/home/derrick/.openclaw/workspace/projects/deepseek-harness/README.md` first. QA rerun after commit `98035a8385` still leaves the visible served DSH chat draft empty for both file and folder Add to chat actions. Use `/tmp/dsh-workspace-viewer-qa-rerun/results.json` and the served DSH surface to identify the actual visible composer integration. Make Add to chat insert the selected absolute file/folder path into the visible chat draft on `https://derrick-surface-pro-8.tail613fcb.ts.net:8443/`. Keep the patch narrow, update focused tests, rebuild shipped artifacts, run relevant validation, update this plan, commit, push, and hand back to QA bead `oc-qff`.
+
+**Folders Created/Deleted/Modified:**
+- `Pending`
+
+**Files Created/Deleted/Modified:**
+- `Pending`
+
+**Status:** ⏳ Pending
+
+**Results:** Pending.
+
+---
+
+### Task 5: Independent Audit And Closure
 
 **Bead ID:** `oc-0p2`
 **SubAgent:** `primary`
@@ -300,6 +320,7 @@ Commit: `98035a8385` — `fix(workspace-file-viewer): create chat session before
 - `e30c5ee8d2` — `docs(plan): record workspace viewer editor QA failure`
 - `5bfa496c03` — `docs(plan): add workspace viewer add-to-chat remediation`
 - `98035a8385` — `fix(workspace-file-viewer): create chat session before adding paths`
+- `7836b3274a` — `docs(plan): record workspace viewer QA rerun failure`
 
 **Lessons Learned:** Parent review must verify subagent commit/bead claims directly; the returned handoff was not consistent with the checkout state.
 
