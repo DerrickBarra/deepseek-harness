@@ -2,8 +2,8 @@
 
 **Date:** 2026-08-17
 **Status:** In Progress
-**Last Updated:** 2026-08-17 20:51 EDT
-**Blocked Reason:** None; remediation bead `oc-rmv` is active for the QA-discovered Add to chat failure.
+**Last Updated:** 2026-08-17 21:05 EDT
+**Blocked Reason:** None; remediation bead `oc-rmv` is complete and the feature is ready to return to QA bead `oc-qff`.
 **Agent:** `chip`
 
 ---
@@ -162,14 +162,42 @@ Bead `oc-qff` remains `in_progress`; audit bead `oc-0p2` is untouched. Follow-up
 **Prompt:** Claim the assigned bead on start. Read `/home/derrick/.openclaw/workspace/projects/deepseek-harness/README.md` first. Fix the workspace viewer `Add to chat` behavior so the served DSH app inserts the selected absolute file/folder path into the visible chat draft even when no active session exists yet. Keep the patch narrow, update focused client tests, rebuild shipped client artifacts if needed, run relevant validation, commit, push, and hand back to QA bead `oc-qff`.
 
 **Folders Created/Deleted/Modified:**
-- `Pending`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/.agents/notes/implemented/bug-fix/`
 
 **Files Created/Deleted/Modified:**
-- `Pending`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/src/client/WorkspaceFileViewerPanel.tsx`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/src/client/index.ts`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/lib/client.js`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/lib/types/client/index.js`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/.agents/notes/implemented/bug-fix/2026-08-17-workspace-viewer-add-to-chat-session.md`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/.agents/notes/implemented/bug-fix/2026-08-17-workspace-viewer-add-to-chat-session.zh.md`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/.agents/notes/implemented/bug-fix/2026-08-17-workspace-viewer-add-to-chat-session.i18n.yaml`
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
-**Results:** Pending.
+**Results:** Remediation changes are implemented, validated, committed, and pushed.
+
+Functional result: `Add to chat` now resolves a target session before mutating the draft. With an active session, it writes to that session's existing input facade. With no active session, it selects the workspace whose path most specifically contains the chosen absolute file/folder path, connects that workspace to a reusable or new blank session, opens it, then inserts the selected absolute path into that session draft. The overlay now accepts asynchronous `addToChat` failures and reports them through its existing error strip instead of dropping rejected promises.
+
+Focused client coverage now includes active-session path insertion and no-current-session creation/open-before-insert behavior in `plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts`.
+
+Validation commands run:
+
+```sh
+pnpm exec tsc -b plugins/openclaw-workspace-file-viewer/tsconfig.json plugins/openclaw-workspace-file-viewer/tsconfig.client.json
+pnpm exec vitest run plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx
+pnpm exec oxlint plugins/openclaw-workspace-file-viewer/src/client plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx
+pnpm --filter @openclaw/dsh-workspace-file-viewer run bundle
+pnpm run verify-agent-note-format
+pnpm run verify-translation-pairing .agents/notes/implemented/bug-fix/2026-08-17-workspace-viewer-add-to-chat-session.md
+git push derrick HEAD:dsh-chip-workspace-file-viewer
+```
+
+Results: typecheck passed; Vitest passed `2` files and `10` tests; oxlint passed; bundle rebuild passed and refreshed the shipped client artifacts; Agent Note format and translation pairing passed; push reported `Everything up-to-date` with local and remote both at `98035a8385d963d12dc5cb4799dd15e342792c52`. Vitest still emitted the existing `vite-tsconfig-paths` deprecation notice, and the bundle still emitted the existing unsupported optional `linux-arm64` package warning plus tsdown dependency option notices.
+
+Commit: `98035a8385` — `fix(workspace-file-viewer): create chat session before adding paths`
 
 ---
 
@@ -195,15 +223,18 @@ Bead `oc-qff` remains `in_progress`; audit bead `oc-0p2` is untouched. Follow-up
 
 ## Final Results
 
-**Status:** ❌ QA Failed
+**Status:** ✅ Remediation Complete; QA Retry Pending
 
-**What We Built:** Implementation is present, committed, and mostly works on the served DSH surface, but QA found Add to chat does not insert into the active visible draft when no session is active.
+**What We Built:** Implementation is present, committed, and mostly works on the served DSH surface. The QA-discovered Add to chat failure has been remediated in the workspace viewer client and is ready for QA retry.
 
 **Reference Check:** QA failed on Add to chat; audit is pending.
 
 **Commits:**
 - `107d80b73c` — `feat(workspace-file-viewer): add file actions and editor`
 - `855f4d9f9d` — `docs(plan): checkpoint workspace viewer editor QA`
+- `e30c5ee8d2` — `docs(plan): record workspace viewer editor QA failure`
+- `5bfa496c03` — `docs(plan): add workspace viewer add-to-chat remediation`
+- `98035a8385` — `fix(workspace-file-viewer): create chat session before adding paths`
 
 **Lessons Learned:** Parent review must verify subagent commit/bead claims directly; the returned handoff was not consistent with the checkout state.
 
