@@ -1,5 +1,6 @@
+// @vitest-environment jsdom
 import { Context } from '@deepseek-ai/cordis'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import InvariantRegistry from '@deepseek-ai/dsh-invariants'
 import { SlotRegistry, type SessionId, type WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
 import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
@@ -26,6 +27,7 @@ async function bench(): Promise<{
   openSession: ReturnType<typeof vi.fn<(sessionId: SessionId) => void>>
   setCurrent: (sessionId: SessionId | undefined) => void
   draft: () => string
+  setDraft: (text: string) => void
 }> {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
@@ -110,10 +112,15 @@ async function bench(): Promise<{
     ctx, fiber, roots, list, read, save, connectWorkspace, openSession,
     setCurrent: sessionId => { current = sessionId },
     draft: () => draft,
+    setDraft: (text) => { draft = text },
   }
 }
 
 describe('ui-workspace-file-viewer browser half', () => {
+  afterEach(() => {
+    document.body.replaceChildren()
+  })
+
   it('declares the services it binds', () => {
     expect(inject).toEqual(['slots', 'locale', 'remote', 'sessions', 'workspaces', 'conversation'])
   })
@@ -167,6 +174,46 @@ describe('ui-workspace-file-viewer browser half', () => {
     await ctx.fiber.dispose()
   })
 
+  it('inserts paths through the visible composer textarea', async () => {
+    const { ctx, fiber, draft, setDraft } = await bench()
+    const composer = document.createElement('div')
+    composer.dataset.composerCard = ''
+    const textarea = document.createElement('textarea')
+    textarea.value = 'visible'
+    textarea.addEventListener('input', () => {
+      setDraft(textarea.value)
+    })
+    composer.append(textarea)
+    document.body.append(composer)
+    const injected = ctx.slots.entries('shell.overlay')[0]!.inject as unknown as () => WorkspaceFileViewerInjected
+
+    await injected().addToChat('/workspace/repo/README.md')
+
+    expect(textarea.value).toBe('visible\n/workspace/repo/README.md')
+    expect(draft()).toBe('visible\n/workspace/repo/README.md')
+    await fiber.dispose()
+    await ctx.fiber.dispose()
+  })
+
+  it('inserts paths into the read-only no-workspace composer when it is the visible draft', async () => {
+    const { ctx, fiber, connectWorkspace, setCurrent } = await bench()
+    setCurrent(undefined)
+    const composer = document.createElement('div')
+    composer.dataset.composerCard = ''
+    const textarea = document.createElement('textarea')
+    textarea.readOnly = true
+    composer.append(textarea)
+    document.body.append(composer)
+    const injected = ctx.slots.entries('shell.overlay')[0]!.inject as unknown as () => WorkspaceFileViewerInjected
+
+    await injected().addToChat('/workspace/repo/README.md')
+
+    expect(textarea.value).toBe('/workspace/repo/README.md')
+    expect(connectWorkspace).not.toHaveBeenCalled()
+    await fiber.dispose()
+    await ctx.fiber.dispose()
+  })
+
   it('creates a workspace session before adding paths when no chat is active', async () => {
     const { ctx, fiber, connectWorkspace, openSession, setCurrent, draft } = await bench()
     setCurrent(undefined)
@@ -184,6 +231,7 @@ describe('ui-workspace-file-viewer browser half', () => {
   it('registers key-identical dictionaries under its namespace', async () => {
     const { ctx, fiber } = await bench()
     const translate = ctx.locale.bind(NS)
+    ctx.locale.setLocale('zh')
     expect(translate('panel.title')).toBe(zh['panel.title'])
     ctx.locale.setLocale('en')
     expect(translate('panel.title')).toBe(en['panel.title'])

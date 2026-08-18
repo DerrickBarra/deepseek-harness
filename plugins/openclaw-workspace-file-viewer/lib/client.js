@@ -4283,37 +4283,37 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			document.head.appendChild(tag);
 		}
 		var WorkspaceFileViewerPanel_module_css_default = {
-			"body": "ZprdQa_body",
-			"actionButton": "ZprdQa_actionButton",
-			"name": "ZprdQa_name",
-			"header": "ZprdQa_header",
-			"list": "ZprdQa_list",
-			"viewerActions": "ZprdQa_viewerActions",
-			"viewerHeader": "ZprdQa_viewerHeader",
-			"editor": "ZprdQa_editor",
-			"error": "ZprdQa_error",
-			"panel": "ZprdQa_panel",
-			"actionButtonRail": "ZprdQa_actionButtonRail",
-			"meta": "ZprdQa_meta",
 			"row": "ZprdQa_row",
-			"crumb": "ZprdQa_crumb",
-			"viewer": "ZprdQa_viewer",
-			"rootSelect": "ZprdQa_rootSelect",
-			"notice": "ZprdQa_notice",
-			"browser": "ZprdQa_browser",
+			"actionButtonRail": "ZprdQa_actionButtonRail",
 			"title": "ZprdQa_title",
-			"textButton": "ZprdQa_textButton",
-			"overlay": "ZprdQa_overlay",
-			"menuItem": "ZprdQa_menuItem",
-			"htmlPreview": "ZprdQa_htmlPreview",
-			"actionLabel": "ZprdQa_actionLabel",
+			"list": "ZprdQa_list",
 			"menu": "ZprdQa_menu",
-			"breadcrumbs": "ZprdQa_breadcrumbs",
-			"plain": "ZprdQa_plain",
-			"backdrop": "ZprdQa_backdrop",
+			"header": "ZprdQa_header",
+			"body": "ZprdQa_body",
 			"fileTitle": "ZprdQa_fileTitle",
+			"overlay": "ZprdQa_overlay",
+			"bodyCollapsed": "ZprdQa_bodyCollapsed",
+			"panel": "ZprdQa_panel",
+			"crumb": "ZprdQa_crumb",
+			"error": "ZprdQa_error",
+			"viewerHeader": "ZprdQa_viewerHeader",
+			"textButton": "ZprdQa_textButton",
+			"rootSelect": "ZprdQa_rootSelect",
+			"actionButton": "ZprdQa_actionButton",
+			"backdrop": "ZprdQa_backdrop",
+			"breadcrumbs": "ZprdQa_breadcrumbs",
+			"htmlPreview": "ZprdQa_htmlPreview",
+			"editor": "ZprdQa_editor",
+			"meta": "ZprdQa_meta",
+			"actionLabel": "ZprdQa_actionLabel",
 			"iconButton": "ZprdQa_iconButton",
-			"bodyCollapsed": "ZprdQa_bodyCollapsed"
+			"browser": "ZprdQa_browser",
+			"name": "ZprdQa_name",
+			"plain": "ZprdQa_plain",
+			"menuItem": "ZprdQa_menuItem",
+			"viewer": "ZprdQa_viewer",
+			"viewerActions": "ZprdQa_viewerActions",
+			"notice": "ZprdQa_notice"
 		};
 		//#endregion
 		//#region src/client/WorkspaceFileViewerPanel.tsx
@@ -4858,10 +4858,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					return result.value;
 				},
 				addToChat: async (path) => {
+					if (await insertPathIntoVisibleComposer(path)) return;
 					const sessionId = await resolveSessionForDraft(ctx, path);
 					const scope = ctx.sessions.scope(sessionId);
-					if (scope === void 0) throw new Error(ctx.locale.bind(NS)("chat.noSession"));
-					const input = ctx.conversation.input.for(scope);
+					const input = scope === void 0 ? void 0 : ctx.conversation.input.for(scope);
+					if (input === void 0) throw new Error(ctx.locale.bind(NS)("chat.noSession"));
 					const draft = input.state.getSnapshot().draft;
 					input.setDraft(insertPath(draft, path));
 					input.notify("info", ctx.locale.bind(NS)("chat.added"));
@@ -4903,6 +4904,66 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function insertPath(draft, path) {
 			if (draft === "") return path;
 			return `${draft.replace(/\s*$/u, "")}\n${path}`;
+		}
+		async function insertPathIntoVisibleComposer(path) {
+			const textarea = await waitForComposerTextarea();
+			if (textarea === void 0) return false;
+			const next = insertPath(textarea.value, path);
+			await nextFrame();
+			writeTextareaDraft(textarea, next);
+			if (textarea.readOnly) scheduleReadOnlyComposerWrites(textarea, next);
+			else {
+				await nextFrame();
+				if (textarea.value !== next) writeTextareaDraft(textarea, next);
+			}
+			textarea.focus({ preventScroll: true });
+			return true;
+		}
+		async function waitForComposerTextarea() {
+			for (let attempt = 0; attempt < 20; attempt += 1) {
+				const textarea = composerTextarea();
+				if (textarea !== void 0) return textarea;
+				await nextFrame();
+			}
+		}
+		function composerTextarea() {
+			if (typeof document === "undefined") return void 0;
+			const candidates = Array.from(document.querySelectorAll("[data-composer-card] textarea")).filter((textarea) => !textarea.disabled);
+			return candidates.find((textarea) => !textarea.readOnly) ?? candidates[0];
+		}
+		function nextFrame() {
+			if (typeof requestAnimationFrame === "undefined") return new Promise((resolve) => {
+				setTimeout(resolve, 16);
+			});
+			return new Promise((resolve) => {
+				requestAnimationFrame(() => {
+					resolve();
+				});
+			});
+		}
+		function setTextareaValue(textarea, value) {
+			const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+			if (setter === void 0) {
+				textarea.value = value;
+				return;
+			}
+			setter.call(textarea, value);
+		}
+		function writeTextareaDraft(textarea, value) {
+			setTextareaValue(textarea, value);
+			textarea.dispatchEvent(new Event("input", { bubbles: true }));
+		}
+		function scheduleReadOnlyComposerWrites(textarea, value) {
+			for (const delay of [
+				50,
+				150,
+				500,
+				1e3,
+				2e3
+			]) window.setTimeout(() => {
+				if (!textarea.isConnected || !textarea.readOnly || textarea.value === value) return;
+				setTextareaValue(textarea, value);
+			}, delay);
 		}
 		//#endregion
 		exports.apply = apply;

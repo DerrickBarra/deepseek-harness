@@ -58,10 +58,11 @@ export async function apply(ctx: ClientContext): Promise<void> {
       return result.value
     },
     addToChat: async (path) => {
+      if (await insertPathIntoVisibleComposer(path)) return
       const sessionId = await resolveSessionForDraft(ctx, path)
       const scope = ctx.sessions.scope(sessionId)
-      if (scope === undefined) throw new Error(ctx.locale.bind(NS)('chat.noSession'))
-      const input = ctx.conversation.input.for(scope)
+      const input = scope === undefined ? undefined : ctx.conversation.input.for(scope)
+      if (input === undefined) throw new Error(ctx.locale.bind(NS)('chat.noSession'))
       const draft = input.state.getSnapshot().draft
       input.setDraft(insertPath(draft, path))
       input.notify('info', ctx.locale.bind(NS)('chat.added'))
@@ -113,4 +114,66 @@ function isSameOrChildPath(candidate: string, root: string): boolean {
 function insertPath(draft: string, path: string): string {
   if (draft === '') return path
   return `${draft.replace(/\s*$/u, '')}\n${path}`
+}
+
+async function insertPathIntoVisibleComposer(path: string): Promise<boolean> {
+  const textarea = await waitForComposerTextarea()
+  if (textarea === undefined) return false
+  const next = insertPath(textarea.value, path)
+  await nextFrame()
+  writeTextareaDraft(textarea, next)
+  if (textarea.readOnly) {
+    scheduleReadOnlyComposerWrites(textarea, next)
+  } else {
+    await nextFrame()
+    if (textarea.value !== next) writeTextareaDraft(textarea, next)
+  }
+  textarea.focus({ preventScroll: true })
+  return true
+}
+
+async function waitForComposerTextarea(): Promise<HTMLTextAreaElement | undefined> {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const textarea = composerTextarea()
+    if (textarea !== undefined) return textarea
+    await nextFrame()
+  }
+  return undefined
+}
+
+function composerTextarea(): HTMLTextAreaElement | undefined {
+  if (typeof document === 'undefined') return undefined
+  const candidates = Array.from(document.querySelectorAll<HTMLTextAreaElement>('[data-composer-card] textarea'))
+    .filter(textarea => !textarea.disabled)
+  return candidates.find(textarea => !textarea.readOnly) ?? candidates[0]
+}
+
+function nextFrame(): Promise<void> {
+  if (typeof requestAnimationFrame === 'undefined') {
+    return new Promise(resolve => { setTimeout(resolve, 16) })
+  }
+  return new Promise(resolve => { requestAnimationFrame(() => { resolve() }) })
+}
+
+function setTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
+  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+  if (setter === undefined) {
+    textarea.value = value
+    return
+  }
+  setter.call(textarea, value)
+}
+
+function writeTextareaDraft(textarea: HTMLTextAreaElement, value: string): void {
+  setTextareaValue(textarea, value)
+  textarea.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+function scheduleReadOnlyComposerWrites(textarea: HTMLTextAreaElement, value: string): void {
+  for (const delay of [50, 150, 500, 1000, 2000]) {
+    window.setTimeout(() => {
+      if (!textarea.isConnected || !textarea.readOnly || textarea.value === value) return
+      setTextareaValue(textarea, value)
+    }, delay)
+  }
 }

@@ -275,14 +275,58 @@ Commit: `98035a8385` — `fix(workspace-file-viewer): create chat session before
 **Prompt:** Claim the assigned bead on start. Read `/home/derrick/.openclaw/workspace/projects/deepseek-harness/README.md` first. QA rerun after commit `98035a8385` still leaves the visible served DSH chat draft empty for both file and folder Add to chat actions. Use `/tmp/dsh-workspace-viewer-qa-rerun/results.json` and the served DSH surface to identify the actual visible composer integration. Make Add to chat insert the selected absolute file/folder path into the visible chat draft on `https://derrick-surface-pro-8.tail613fcb.ts.net:8443/`. Keep the patch narrow, update focused tests, rebuild shipped artifacts, run relevant validation, update this plan, commit, push, and hand back to QA bead `oc-qff`.
 
 **Folders Created/Deleted/Modified:**
-- `Pending`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/`
+- `/home/derrick/.openclaw/workspace/projects/dsh-orchestration-agent/plugins/openclaw-workspace-file-viewer/` (live-linked deployment copy synced for served smoke; not part of this repository commit)
 
 **Files Created/Deleted/Modified:**
-- `Pending`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/src/client/index.ts`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/lib/client.js`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/lib/types/client/index.js`
+- Live-linked deployment copy of the same plugin client files under `/home/derrick/.openclaw/workspace/projects/dsh-orchestration-agent/plugins/openclaw-workspace-file-viewer/`.
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
-**Results:** Pending.
+**Results:** Implemented and validated the visible-composer integration fix.
+
+Root cause: commit `98035a8385` updated the session input facade, but the served no-session DSH surface still had a read-only visible composer with no active workspace/session to resolve. The served `orchestrator` profile also links the plugin from `/home/derrick/.openclaw/workspace/projects/dsh-orchestration-agent/plugins/openclaw-workspace-file-viewer`, so refreshing only the deepseek-harness plugin copy did not affect the live app until that linked deployment copy was synced.
+
+Functional result: `Add to chat` now first inserts through the actual browser composer textarea when it exists. Writable composers receive the native textarea value setter plus an `input` event, so the real composer state path updates. The no-workspace read-only composer receives a short display handoff after the menu closes so the currently visible draft field contains the selected absolute path even when no chat session can be resolved. The previous session-facade path remains as the non-DOM fallback.
+
+Focused coverage added to `plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts`:
+- writable visible composer insertion through the textarea/input event path.
+- read-only no-workspace visible composer insertion without calling `connectWorkspace`.
+- existing no-DOM fallback coverage for active-session and no-current-session session-facade insertion remains.
+
+Validation commands run:
+
+```sh
+pnpm exec tsc -b plugins/openclaw-workspace-file-viewer/tsconfig.json plugins/openclaw-workspace-file-viewer/tsconfig.client.json
+pnpm exec vitest run plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx
+pnpm exec oxlint plugins/openclaw-workspace-file-viewer/src/client/index.ts plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts
+pnpm --filter @openclaw/dsh-workspace-file-viewer run bundle
+pnpm exec vitest run plugins/openclaw-workspace-file-viewer/tests/workspace-file-viewer.spec.ts plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx plugins/openclaw-workspace-file-viewer/tests/invariant.spec.ts
+pnpm exec oxlint plugins/openclaw-workspace-file-viewer/src plugins/openclaw-workspace-file-viewer/tests
+git diff --check
+/home/derrick/.openclaw/workspace/projects/dsh-orchestration-agent/scripts/update.sh
+systemctl --user restart dsh-chip.service
+curl -k -I --max-time 10 https://derrick-surface-pro-8.tail613fcb.ts.net:8443/
+node - <<'NODE'
+# Playwright smoke opened the served app, dismissed the testing notice, opened Workspace files,
+# selected OpenClaw workspace, right-clicked the `.openclaw` file-list row, clicked Add to chat,
+# and read `[data-composer-card] textarea`.
+NODE
+```
+
+Results: typecheck passed. Focused browser/panel Vitest passed `2` files and `12` tests. Full focused plugin Vitest passed `4` files and `18` tests. Oxlint passed for the changed files and then for the full plugin `src`/`tests` surface. `git diff --check` passed after removing generated trailing whitespace from `lib/client.js`. Bundle rebuild passed and refreshed shipped artifacts; it continued to emit the existing unsupported optional `linux-arm64` warning plus tsdown dependency option notices. Vitest continued to emit the existing `vite-tsconfig-paths` deprecation notice.
+
+Deployment: `update.sh` completed successfully with all post-run verification rows passing. `dsh-chip.service` was restarted after syncing the live-linked plugin copy and `https://derrick-surface-pro-8.tail613fcb.ts.net:8443/` returned HTTP `200`.
+
+Served browser smoke evidence: `/tmp/dsh-workspace-viewer-visible-composer-smoke/result.json` reports `ok=true`, `draft="/home/derrick/.openclaw/workspace/.openclaw"`, and expected path `/home/derrick/.openclaw/workspace/.openclaw`. Screenshot: `/tmp/dsh-workspace-viewer-visible-composer-smoke/visible-composer-after-add.png`. The only recorded browser errors were the known `/api/credentials.describe` and `/api/settings.describe` HTTP `403` noise.
+
+Known deployment caveat: the live served profile currently links the plugin from the `dsh-orchestration-agent` checkout, not the deepseek-harness checkout. The linked copy was synced for this smoke; the committed source of record for this bead is the deepseek-harness branch.
+
+Commit: `fix(workspace-file-viewer): target visible composer draft`
 
 ---
 
@@ -308,11 +352,11 @@ Commit: `98035a8385` — `fix(workspace-file-viewer): create chat session before
 
 ## Final Results
 
-**Status:** ❌ QA Rerun Failed; Add To Chat Still Blocking Audit
+**Status:** ✅ Visible Composer Remediation Ready For QA Rerun
 
-**What We Built:** Implementation is present, committed, and mostly works on the served DSH surface. The QA-discovered Add to chat failure remains reproducible on the served app after remediation commit `98035a8385`.
+**What We Built:** Implementation is present and the served visible-composer Add to chat smoke now passes after the `oc-5wu` remediation. The feature still needs the planned QA rerun (`oc-qff`) and independent audit (`oc-0p2`).
 
-**Reference Check:** QA rerun failed on Add to chat; audit is still blocked and pending.
+**Reference Check:** `oc-5wu` has served browser evidence for visible draft insertion. `oc-qff` remains `in_progress` for QA rerun; audit remains pending.
 
 **Commits:**
 - `107d80b73c` — `feat(workspace-file-viewer): add file actions and editor`
@@ -321,6 +365,7 @@ Commit: `98035a8385` — `fix(workspace-file-viewer): create chat session before
 - `5bfa496c03` — `docs(plan): add workspace viewer add-to-chat remediation`
 - `98035a8385` — `fix(workspace-file-viewer): create chat session before adding paths`
 - `7836b3274a` — `docs(plan): record workspace viewer QA rerun failure`
+- `fix(workspace-file-viewer): target visible composer draft`
 
 **Lessons Learned:** Parent review must verify subagent commit/bead claims directly; the returned handoff was not consistent with the checkout state.
 
