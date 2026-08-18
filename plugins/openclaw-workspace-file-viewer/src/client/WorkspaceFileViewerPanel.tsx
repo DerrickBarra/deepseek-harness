@@ -21,7 +21,7 @@ export interface WorkspaceFileViewerInjected {
   list: (rootId: string, path: string) => Promise<WorkspaceFileViewerListing>
   read: (rootId: string, path: string) => Promise<WorkspaceFileViewerFile>
   save: (rootId: string, path: string, content: string) => Promise<WorkspaceFileViewerFile>
-  addToChat: (path: string) => void
+  addToChat: (path: string) => void | Promise<void>
 }
 
 /** Full props for the sidebar footer action. */
@@ -166,11 +166,11 @@ export function WorkspaceFileViewerOverlay({ roots, list, read, save, addToChat,
   const selectedRoot = rootRows.find(root => root.id === rootId)
   const addPathToChat = (relativePath: string): void => {
     if (selectedRoot === undefined) return
-    try {
-      addToChat(rootPath(selectedRoot, relativePath))
-    } catch (cause: unknown) {
-      setError(cause instanceof Error ? cause.message : String(cause))
-    }
+    void Promise.resolve(addToChat(rootPath(selectedRoot, relativePath)))
+      .then(() => { setError(undefined) })
+      .catch((cause: unknown) => {
+        setError(cause instanceof Error ? cause.message : String(cause))
+      })
     setMenu(undefined)
   }
 

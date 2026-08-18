@@ -3,7 +3,7 @@ import workspaceFileViewerRemote from '@openclaw/dsh-workspace-file-viewer/remot
 import { WorkspaceFileViewerAction, WorkspaceFileViewerOverlay, } from "./WorkspaceFileViewerPanel.js";
 import { en, NS, zh } from "./locales.js";
 /** Services required before this plugin can mount its own Remote namespace and UI. */
-export const inject = ['slots', 'locale', 'remote', 'sessions', 'conversation'];
+export const inject = ['slots', 'locale', 'remote', 'sessions', 'workspaces', 'conversation'];
 /** Mount the package Remote contribution, sidebar action, and shell overlay. */
 export async function apply(ctx) {
     await ctx.remote.$mount(workspaceFileViewerRemote);
@@ -39,11 +39,8 @@ export async function apply(ctx) {
                 throw new Error(result.error.message);
             return result.value;
         },
-        addToChat: (path) => {
-            const sessionId = ctx.sessions.list.getSnapshot().current;
-            if (sessionId === undefined) {
-                throw new Error(ctx.locale.bind(NS)('chat.noSession'));
-            }
+        addToChat: async (path) => {
+            const sessionId = await resolveSessionForDraft(ctx, path);
             const scope = ctx.sessions.scope(sessionId);
             if (scope === undefined)
                 throw new Error(ctx.locale.bind(NS)('chat.noSession'));
@@ -67,6 +64,30 @@ export async function apply(ctx) {
         locale: NS,
         inject: injected,
     }, WorkspaceFileViewerOverlay));
+}
+async function resolveSessionForDraft(ctx, path) {
+    const current = ctx.sessions.list.getSnapshot().current;
+    if (current !== undefined)
+        return current;
+    const target = targetWorkspaceId(ctx, path);
+    if (target === undefined)
+        throw new Error(ctx.locale.bind(NS)('chat.noSession'));
+    const sessionId = await ctx.workspaces.connectWorkspace(target);
+    ctx.sessions.open(sessionId);
+    return sessionId;
+}
+function targetWorkspaceId(ctx, path) {
+    const snapshot = ctx.workspaces.list.getSnapshot();
+    return snapshot.items
+        .filter(item => isSameOrChildPath(path, item.path))
+        .sort((left, right) => right.path.length - left.path.length)[0]
+        ?.workspaceId ?? snapshot.recentWorkspaceId;
+}
+function isSameOrChildPath(candidate, root) {
+    const normalizedRoot = root.replace(/[/\\]+$/u, '');
+    if (candidate === normalizedRoot)
+        return true;
+    return candidate.startsWith(`${normalizedRoot}/`) || candidate.startsWith(`${normalizedRoot}\\`);
 }
 function insertPath(draft, path) {
     if (draft === '')

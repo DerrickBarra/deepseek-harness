@@ -4283,37 +4283,37 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			document.head.appendChild(tag);
 		}
 		var WorkspaceFileViewerPanel_module_css_default = {
-			"title": "ZprdQa_title",
-			"viewerHeader": "ZprdQa_viewerHeader",
-			"bodyCollapsed": "ZprdQa_bodyCollapsed",
-			"meta": "ZprdQa_meta",
-			"menuItem": "ZprdQa_menuItem",
-			"notice": "ZprdQa_notice",
-			"header": "ZprdQa_header",
-			"panel": "ZprdQa_panel",
-			"iconButton": "ZprdQa_iconButton",
-			"name": "ZprdQa_name",
-			"actionButtonRail": "ZprdQa_actionButtonRail",
-			"viewerActions": "ZprdQa_viewerActions",
-			"menu": "ZprdQa_menu",
-			"overlay": "ZprdQa_overlay",
-			"actionButton": "ZprdQa_actionButton",
-			"rootSelect": "ZprdQa_rootSelect",
-			"breadcrumbs": "ZprdQa_breadcrumbs",
-			"backdrop": "ZprdQa_backdrop",
-			"row": "ZprdQa_row",
-			"textButton": "ZprdQa_textButton",
-			"error": "ZprdQa_error",
 			"body": "ZprdQa_body",
-			"browser": "ZprdQa_browser",
+			"actionButton": "ZprdQa_actionButton",
+			"name": "ZprdQa_name",
+			"header": "ZprdQa_header",
 			"list": "ZprdQa_list",
-			"actionLabel": "ZprdQa_actionLabel",
+			"viewerActions": "ZprdQa_viewerActions",
+			"viewerHeader": "ZprdQa_viewerHeader",
 			"editor": "ZprdQa_editor",
-			"fileTitle": "ZprdQa_fileTitle",
-			"plain": "ZprdQa_plain",
-			"htmlPreview": "ZprdQa_htmlPreview",
+			"error": "ZprdQa_error",
+			"panel": "ZprdQa_panel",
+			"actionButtonRail": "ZprdQa_actionButtonRail",
+			"meta": "ZprdQa_meta",
+			"row": "ZprdQa_row",
+			"crumb": "ZprdQa_crumb",
 			"viewer": "ZprdQa_viewer",
-			"crumb": "ZprdQa_crumb"
+			"rootSelect": "ZprdQa_rootSelect",
+			"notice": "ZprdQa_notice",
+			"browser": "ZprdQa_browser",
+			"title": "ZprdQa_title",
+			"textButton": "ZprdQa_textButton",
+			"overlay": "ZprdQa_overlay",
+			"menuItem": "ZprdQa_menuItem",
+			"htmlPreview": "ZprdQa_htmlPreview",
+			"actionLabel": "ZprdQa_actionLabel",
+			"menu": "ZprdQa_menu",
+			"breadcrumbs": "ZprdQa_breadcrumbs",
+			"plain": "ZprdQa_plain",
+			"backdrop": "ZprdQa_backdrop",
+			"fileTitle": "ZprdQa_fileTitle",
+			"iconButton": "ZprdQa_iconButton",
+			"bodyCollapsed": "ZprdQa_bodyCollapsed"
 		};
 		//#endregion
 		//#region src/client/WorkspaceFileViewerPanel.tsx
@@ -4451,11 +4451,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const selectedRoot = rootRows.find((root) => root.id === rootId);
 			const addPathToChat = (relativePath) => {
 				if (selectedRoot === void 0) return;
-				try {
-					addToChat(rootPath(selectedRoot, relativePath));
-				} catch (cause) {
+				Promise.resolve(addToChat(rootPath(selectedRoot, relativePath))).then(() => {
+					setError(void 0);
+				}).catch((cause) => {
 					setError(cause instanceof Error ? cause.message : String(cause));
-				}
+				});
 				setMenu(void 0);
 			};
 			if (!open) return null;
@@ -4821,6 +4821,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"locale",
 			"remote",
 			"sessions",
+			"workspaces",
 			"conversation"
 		];
 		/** Mount the package Remote contribution, sidebar action, and shell overlay. */
@@ -4856,9 +4857,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (!result.ok) throw new Error(result.error.message);
 					return result.value;
 				},
-				addToChat: (path) => {
-					const sessionId = ctx.sessions.list.getSnapshot().current;
-					if (sessionId === void 0) throw new Error(ctx.locale.bind(NS)("chat.noSession"));
+				addToChat: async (path) => {
+					const sessionId = await resolveSessionForDraft(ctx, path);
 					const scope = ctx.sessions.scope(sessionId);
 					if (scope === void 0) throw new Error(ctx.locale.bind(NS)("chat.noSession"));
 					const input = ctx.conversation.input.for(scope);
@@ -4881,6 +4881,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				locale: NS,
 				inject: injected
 			}, WorkspaceFileViewerOverlay));
+		}
+		async function resolveSessionForDraft(ctx, path) {
+			const current = ctx.sessions.list.getSnapshot().current;
+			if (current !== void 0) return current;
+			const target = targetWorkspaceId(ctx, path);
+			if (target === void 0) throw new Error(ctx.locale.bind(NS)("chat.noSession"));
+			const sessionId = await ctx.workspaces.connectWorkspace(target);
+			ctx.sessions.open(sessionId);
+			return sessionId;
+		}
+		function targetWorkspaceId(ctx, path) {
+			const snapshot = ctx.workspaces.list.getSnapshot();
+			return snapshot.items.filter((item) => isSameOrChildPath(path, item.path)).sort((left, right) => right.path.length - left.path.length)[0]?.workspaceId ?? snapshot.recentWorkspaceId;
+		}
+		function isSameOrChildPath(candidate, root) {
+			const normalizedRoot = root.replace(/[/\\]+$/u, "");
+			if (candidate === normalizedRoot) return true;
+			return candidate.startsWith(`${normalizedRoot}/`) || candidate.startsWith(`${normalizedRoot}\\`);
 		}
 		function insertPath(draft, path) {
 			if (draft === "") return path;

@@ -25,7 +25,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** Services required before this plugin can mount its own Remote namespace and UI. */
-export const inject = ['slots', 'locale', 'remote', 'sessions', 'conversation']
+export const inject = ['slots', 'locale', 'remote', 'sessions', 'workspaces', 'conversation']
 
 /** Mount the package Remote contribution, sidebar action, and shell overlay. */
 export async function apply(ctx: ClientContext): Promise<void> {
@@ -57,11 +57,8 @@ export async function apply(ctx: ClientContext): Promise<void> {
       if (!result.ok) throw new Error(result.error.message)
       return result.value
     },
-    addToChat: (path) => {
-      const sessionId = ctx.sessions.list.getSnapshot().current
-      if (sessionId === undefined) {
-        throw new Error(ctx.locale.bind(NS)('chat.noSession'))
-      }
+    addToChat: async (path) => {
+      const sessionId = await resolveSessionForDraft(ctx, path)
       const scope = ctx.sessions.scope(sessionId)
       if (scope === undefined) throw new Error(ctx.locale.bind(NS)('chat.noSession'))
       const input = ctx.conversation.input.for(scope)
@@ -84,6 +81,33 @@ export async function apply(ctx: ClientContext): Promise<void> {
     locale: NS,
     inject: injected,
   }, WorkspaceFileViewerOverlay))
+}
+
+async function resolveSessionForDraft(
+  ctx: ClientContext,
+  path: string,
+): Promise<NonNullable<ReturnType<ClientContext['sessions']['list']['getSnapshot']>['current']>> {
+  const current = ctx.sessions.list.getSnapshot().current
+  if (current !== undefined) return current
+  const target = targetWorkspaceId(ctx, path)
+  if (target === undefined) throw new Error(ctx.locale.bind(NS)('chat.noSession'))
+  const sessionId = await ctx.workspaces.connectWorkspace(target)
+  ctx.sessions.open(sessionId)
+  return sessionId
+}
+
+function targetWorkspaceId(ctx: ClientContext, path: string): ReturnType<ClientContext['workspaces']['list']['getSnapshot']>['recentWorkspaceId'] {
+  const snapshot = ctx.workspaces.list.getSnapshot()
+  return snapshot.items
+    .filter(item => isSameOrChildPath(path, item.path))
+    .sort((left, right) => right.path.length - left.path.length)[0]
+    ?.workspaceId ?? snapshot.recentWorkspaceId
+}
+
+function isSameOrChildPath(candidate: string, root: string): boolean {
+  const normalizedRoot = root.replace(/[/\\]+$/u, '')
+  if (candidate === normalizedRoot) return true
+  return candidate.startsWith(`${normalizedRoot}/`) || candidate.startsWith(`${normalizedRoot}\\`)
 }
 
 function insertPath(draft: string, path: string): string {
