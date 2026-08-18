@@ -2,8 +2,8 @@
 
 **Date:** 2026-08-17
 **Status:** In Progress
-**Last Updated:** 2026-08-17 20:33 EDT
-**Blocked Reason:** None
+**Last Updated:** 2026-08-17 20:50 EDT
+**Blocked Reason:** QA found Add to chat does not insert into the visible chat draft when the served app has no active session.
 **Agent:** `chip`
 
 ---
@@ -97,14 +97,59 @@ Parent checkpoint:
 **Prompt:** Claim the assigned bead on start. Read `/home/derrick/.openclaw/workspace/projects/deepseek-harness/README.md` first. After the implementation is committed and the live DSH app is refreshed, verify the served DSH surface on the phone-test URL. Confirm the workspace viewer loads, Add to chat inserts a selected file/folder path into the active chat draft, the explorer collapses/expands, view/edit controls appear for text files, HTML files can be previewed and edited as text, Save writes to the host file, and Cancel restores the original content without writing. Report exact browser evidence and fail on in-scope errors.
 
 **Folders Created/Deleted/Modified:**
-- `Pending`
+- `/tmp/dsh-workspace-viewer-qa/`
 
 **Files Created/Deleted/Modified:**
-- `Pending`
+- `/tmp/dsh-workspace-viewer-qa/01-panel-open-openclaw-root.png`
+- `/tmp/dsh-workspace-viewer-qa/02-repo-directory.png`
+- `/tmp/dsh-workspace-viewer-qa/03-add-to-chat-failure.png`
+- `/tmp/dsh-workspace-viewer-qa/04-collapsed-selected-file.png`
+- `/tmp/dsh-workspace-viewer-qa/05-expanded-selected-file.png`
+- `/tmp/dsh-workspace-viewer-qa/06-markdown-saved.png`
+- `/tmp/dsh-workspace-viewer-qa/07-cancel-restored-view.png`
+- `/tmp/dsh-workspace-viewer-qa/08-html-preview.png`
+- `/tmp/dsh-workspace-viewer-qa/09-html-edit-cancel.png`
+- `/tmp/dsh-workspace-viewer-qa/events.json`
+- `/tmp/dsh-workspace-viewer-qa/results.json`
 
-**Status:** ⏳ Pending
+**Status:** ❌ Failed
 
-**Results:** Pending.
+**Results:** QA used Playwright against `https://derrick-surface-pro-8.tail613fcb.ts.net:8443/`; the primary URL returned HTTP 200, so the local fallback `http://127.0.0.1:3081/` was not needed.
+
+Exact commands run:
+
+```sh
+curl -k -I --max-time 10 https://derrick-surface-pro-8.tail613fcb.ts.net:8443/
+curl -I --max-time 5 http://127.0.0.1:3081/
+node - <<'NODE'
+# Playwright script loaded /home/derrick/.npm-global/lib/node_modules/playwright, opened the served app, selected
+# OpenClaw workspace, navigated to projects/deepseek-harness, exercised Add to chat, collapse/expand, Markdown
+# edit/save/cancel, and HTML preview/edit/cancel, then wrote screenshots and JSON results to /tmp/dsh-workspace-viewer-qa/.
+NODE
+```
+
+Temporary files used under the allowlisted OpenClaw workspace root:
+
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-test.md`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-test.html`
+
+Both temporary files were deleted after QA.
+
+Passing checks:
+
+- Workspace viewer plugin loaded on the served app with the `Workspace files` panel visible and no boot/runtime crash.
+- Explorer root switching to `OpenClaw workspace` and navigation to `projects/deepseek-harness` worked.
+- Explorer collapse and expand preserved the selected Markdown file preview.
+- Markdown view/edit mode worked; Save wrote the edited content to the host file under the allowlisted workspace root.
+- Cancel from Markdown edit mode exited without writing the changed draft.
+- HTML view mode rendered the file in an iframe preview, edit mode exposed the HTML source text, and Cancel did not write the changed HTML draft.
+- In-scope console/network/runtime logs had no viewer-path errors. Observed only the documented served-app auth/gateway noise: HTTP 403 for `/api/credentials.describe` and `/api/settings.describe`, with matching browser `Failed to load resource` console errors.
+
+Blocking failure:
+
+- Add to chat failed for both file and folder rows. Right-clicking `qa-workspace-viewer-test.md` and `plugins`, then choosing `Add to chat`, left the visible chat draft empty (`draft=""`). The panel showed `Could not load: No active chat session is available`. Expected inserted paths were `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-test.md` and `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins`.
+
+Bead `oc-qff` remains `in_progress`; audit bead `oc-0p2` is untouched.
 
 ---
 
@@ -130,14 +175,15 @@ Parent checkpoint:
 
 ## Final Results
 
-**Status:** ⚠️ Partial
+**Status:** ❌ QA Failed
 
-**What We Built:** Implementation is present and locally validated, but not yet committed in this checkout and not yet QA/audited on the served DSH surface.
+**What We Built:** Implementation is present, committed, and mostly works on the served DSH surface, but QA found Add to chat does not insert into the active visible draft when no session is active.
 
-**Reference Check:** Pending QA and audit.
+**Reference Check:** QA failed on Add to chat; audit is pending.
 
 **Commits:**
-- Pending.
+- `107d80b73c` — `feat(workspace-file-viewer): add file actions and editor`
+- `855f4d9f9d` — `docs(plan): checkpoint workspace viewer editor QA`
 
 **Lessons Learned:** Parent review must verify subagent commit/bead claims directly; the returned handoff was not consistent with the checkout state.
 
