@@ -4080,7 +4080,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}).readonly(),
 			"path": string().readonly(),
 			"name": string().readonly(),
-			"mode": union([literal("markdown"), literal("text")]).readonly(),
+			"mode": union([
+				literal("html"),
+				literal("markdown"),
+				literal("text")
+			]).readonly(),
 			"content": string().readonly(),
 			"size": number().readonly()
 		});
@@ -4089,6 +4093,25 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"path": string().readonly(),
 			"label": string().readonly()
 		}));
+		const _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_save_parameter_0$schema = string();
+		const _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_save_parameter_1$schema = string();
+		const _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_save_parameter_2$schema = string();
+		const _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_save_result$schema = object({
+			"root": object({
+				"id": string().readonly(),
+				"path": string().readonly(),
+				"label": string().readonly()
+			}).readonly(),
+			"path": string().readonly(),
+			"name": string().readonly(),
+			"mode": union([
+				literal("html"),
+				literal("markdown"),
+				literal("text")
+			]).readonly(),
+			"content": string().readonly(),
+			"size": number().readonly()
+		});
 		const TYPERT_REMOTE = {
 			package: "@openclaw/dsh-workspace-file-viewer",
 			descriptors: [
@@ -4124,7 +4147,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 118,
+						"line": 119,
 						"column": 9
 					}
 				},
@@ -4160,7 +4183,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 161,
+						"line": 162,
 						"column": 9
 					}
 				},
@@ -4178,7 +4201,56 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 107,
+						"line": 108,
+						"column": 9
+					}
+				},
+				{
+					id: "@openclaw/dsh-workspace-file-viewer#workspaceFileViewer/save",
+					service: "workspaceFileViewer",
+					namespace: "workspaceFileViewer",
+					method: "save",
+					invocation: { kind: "direct" },
+					parameters: [
+						{
+							name: "rootId",
+							wire: "rootId",
+							source: "json",
+							codec: {
+								mode: "strict",
+								typeSymbol: "@openclaw/dsh-workspace-file-viewer#workspaceFileViewer/save:rootId",
+								schema: _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_save_parameter_0$schema
+							}
+						},
+						{
+							name: "requestPath",
+							wire: "requestPath",
+							source: "json",
+							codec: {
+								mode: "strict",
+								typeSymbol: "@openclaw/dsh-workspace-file-viewer#workspaceFileViewer/save:requestPath",
+								schema: _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_save_parameter_1$schema
+							}
+						},
+						{
+							name: "content",
+							wire: "content",
+							source: "json",
+							codec: {
+								mode: "strict",
+								typeSymbol: "@openclaw/dsh-workspace-file-viewer#workspaceFileViewer/save:content",
+								schema: _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_save_parameter_2$schema
+							}
+						}
+					],
+					result: {
+						mode: "strict",
+						typeSymbol: "@openclaw/dsh-workspace-file-viewer/types#WorkspaceFileViewerFile",
+						schema: _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_save_result$schema
+					},
+					sourceLocation: {
+						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
+						"line": 193,
 						"column": 9
 					}
 				}
@@ -4201,7 +4273,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		//#region \0dsh-css:/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/src/client/WorkspaceFileViewerPanel.module.css.mjs
-		const css = ".ZprdQa_actionButton{width:100%;min-width:0;height:32px;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:8px;flex:none;justify-content:center;align-items:center;gap:6px;padding:0 10px;display:inline-flex}.ZprdQa_actionButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_actionButtonRail{border-radius:50%;width:36px;height:36px;padding:0}.ZprdQa_actionLabel{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.ZprdQa_overlay{z-index:20;pointer-events:none;justify-content:flex-end;display:flex;position:fixed;inset:0}.ZprdQa_backdrop{pointer-events:auto;background:#0000002e;position:absolute;inset:0}.ZprdQa_panel{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);width:min(920px,100vw - 48px);height:calc(100vh - 48px);color:var(--dsw-alias-label-primary);box-shadow:var(--dsw-alias-shadow-l3);pointer-events:auto;border-radius:8px;grid-template-rows:auto minmax(0,1fr);margin:24px;display:grid;position:relative;overflow:hidden}.ZprdQa_header{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:center;gap:8px;min-width:0;padding:12px 14px;display:flex}.ZprdQa_title{flex:1;min-width:0;margin:0;font-size:14px;font-weight:600;line-height:20px}.ZprdQa_iconButton{width:30px;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:0;border-radius:50%;flex:none;justify-content:center;align-items:center;display:inline-flex}.ZprdQa_iconButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_body{grid-template-columns:minmax(220px,320px) minmax(0,1fr);min-height:0;display:grid}.ZprdQa_browser{border-right:1px solid var(--dsw-alias-border-l2);grid-template-rows:auto auto minmax(0,1fr);min-width:0;min-height:0;display:grid}.ZprdQa_rootSelect{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:0;height:32px;color:var(--dsw-alias-label-primary);border-radius:8px;margin:12px}.ZprdQa_breadcrumbs{align-items:center;gap:4px;min-width:0;padding:0 12px 10px;display:flex;overflow:auto hidden}.ZprdQa_crumb{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:0;border-radius:6px;flex:none;padding:4px 6px;font-size:12px}.ZprdQa_crumb:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_list{min-height:0;padding:0 8px 10px;overflow:auto}.ZprdQa_row{width:100%;min-height:30px;color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;background:0 0;border:0;border-radius:6px;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 8px;display:grid}.ZprdQa_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.ZprdQa_row:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}.ZprdQa_name{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.ZprdQa_meta{color:var(--dsw-alias-label-tertiary);font-size:11px}.ZprdQa_viewer{min-width:0;min-height:0;padding:18px 22px;overflow:auto}.ZprdQa_fileTitle{margin:0 0 14px;font-size:16px;font-weight:600;line-height:22px}.ZprdQa_plain{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--ds-font-mono);margin:0;font-size:12px;line-height:18px}.ZprdQa_notice{color:var(--dsw-alias-label-secondary);padding:14px 12px;font-size:13px}.ZprdQa_error{color:var(--dsw-alias-label-danger);white-space:pre-wrap;margin:0;padding:14px 12px;font-size:13px}@media (width<=720px){.ZprdQa_panel{border-radius:0;width:100vw;height:100vh;margin:0}.ZprdQa_body{grid-template-rows:minmax(220px,40vh) minmax(0,1fr);grid-template-columns:1fr}.ZprdQa_browser{border-right:0;border-bottom:1px solid var(--dsw-alias-border-l2)}}";
+		const css = ".ZprdQa_actionButton{width:100%;min-width:0;height:32px;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:8px;flex:none;justify-content:center;align-items:center;gap:6px;padding:0 10px;display:inline-flex}.ZprdQa_actionButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_actionButtonRail{border-radius:50%;width:36px;height:36px;padding:0}.ZprdQa_actionLabel{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.ZprdQa_overlay{z-index:20;pointer-events:none;justify-content:flex-end;display:flex;position:fixed;inset:0}.ZprdQa_backdrop{pointer-events:auto;background:#0000002e;position:absolute;inset:0}.ZprdQa_panel{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);width:min(920px,100vw - 48px);height:calc(100vh - 48px);color:var(--dsw-alias-label-primary);box-shadow:var(--dsw-alias-shadow-l3);pointer-events:auto;border-radius:8px;grid-template-rows:auto minmax(0,1fr);margin:24px;display:grid;position:relative;overflow:hidden}.ZprdQa_header{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:center;gap:8px;min-width:0;padding:12px 14px;display:flex}.ZprdQa_title{flex:1;min-width:0;margin:0;font-size:14px;font-weight:600;line-height:20px}.ZprdQa_iconButton{width:30px;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:0;border-radius:50%;flex:none;justify-content:center;align-items:center;display:inline-flex}.ZprdQa_iconButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_body{grid-template-columns:minmax(220px,320px) minmax(0,1fr);min-height:0;display:grid}.ZprdQa_bodyCollapsed{grid-template-columns:minmax(0,1fr)}.ZprdQa_browser{border-right:1px solid var(--dsw-alias-border-l2);grid-template-rows:auto auto minmax(0,1fr);min-width:0;min-height:0;display:grid}.ZprdQa_rootSelect{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:0;height:32px;color:var(--dsw-alias-label-primary);border-radius:8px;margin:12px}.ZprdQa_breadcrumbs{align-items:center;gap:4px;min-width:0;padding:0 12px 10px;display:flex;overflow:auto hidden}.ZprdQa_crumb{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:0;border-radius:6px;flex:none;padding:4px 6px;font-size:12px}.ZprdQa_crumb:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_list{min-height:0;padding:0 8px 10px;overflow:auto}.ZprdQa_row{width:100%;min-height:30px;color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;background:0 0;border:0;border-radius:6px;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 8px;display:grid}.ZprdQa_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.ZprdQa_row[aria-disabled=true]{color:var(--dsw-alias-label-tertiary)}.ZprdQa_name{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.ZprdQa_meta{color:var(--dsw-alias-label-tertiary);font-size:11px}.ZprdQa_viewer{min-width:0;min-height:0;padding:18px 22px;overflow:auto}.ZprdQa_viewerHeader{align-items:center;gap:10px;min-width:0;margin:0 0 14px;display:flex}.ZprdQa_fileTitle{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;margin:0;font-size:16px;font-weight:600;line-height:22px;overflow:hidden}.ZprdQa_viewerActions{flex:none;align-items:center;gap:6px;display:inline-flex}.ZprdQa_textButton{min-width:0;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:6px;flex:none;justify-content:center;align-items:center;gap:6px;padding:0 10px;font-size:12px;display:inline-flex}.ZprdQa_textButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_textButton:disabled,.ZprdQa_iconButton:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}.ZprdQa_textButton:disabled:hover,.ZprdQa_iconButton:disabled:hover{background:0 0}.ZprdQa_plain{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--ds-font-mono);margin:0;font-size:12px;line-height:18px}.ZprdQa_htmlPreview{border:1px solid var(--dsw-alias-border-l2);background:#fff;border-radius:6px;width:100%;min-height:420px}.ZprdQa_editor{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);width:100%;min-height:calc(100vh - 190px);color:var(--dsw-alias-label-primary);font-family:var(--ds-font-mono);border-radius:6px;padding:10px 12px;font-size:12px;line-height:18px;display:block}.ZprdQa_menu{z-index:21;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:150px;box-shadow:var(--dsw-alias-shadow-l2);border-radius:8px;padding:4px;position:fixed}.ZprdQa_menuItem{width:100%;min-height:30px;color:var(--dsw-alias-label-primary);cursor:pointer;font:inherit;text-align:left;background:0 0;border:0;border-radius:6px;align-items:center;gap:8px;padding:5px 8px;font-size:13px;display:flex}.ZprdQa_menuItem:hover{background:var(--dsw-alias-interactive-bg-hover)}.ZprdQa_notice{color:var(--dsw-alias-label-secondary);padding:14px 12px;font-size:13px}.ZprdQa_error{color:var(--dsw-alias-label-danger);white-space:pre-wrap;margin:0;padding:14px 12px;font-size:13px}@media (width<=720px){.ZprdQa_panel{border-radius:0;width:100vw;height:100vh;margin:0}.ZprdQa_body{grid-template-rows:minmax(220px,40vh) minmax(0,1fr);grid-template-columns:1fr}.ZprdQa_bodyCollapsed{grid-template-rows:minmax(0,1fr)}.ZprdQa_browser{border-right:0;border-bottom:1px solid var(--dsw-alias-border-l2)}.ZprdQa_editor{min-height:360px}}";
 		const tagId = "@openclaw/dsh-workspace-file-viewer/WorkspaceFileViewerPanel.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -4212,28 +4284,36 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		var WorkspaceFileViewerPanel_module_css_default = {
 			"title": "ZprdQa_title",
-			"header": "ZprdQa_header",
-			"breadcrumbs": "ZprdQa_breadcrumbs",
-			"fileTitle": "ZprdQa_fileTitle",
-			"crumb": "ZprdQa_crumb",
-			"overlay": "ZprdQa_overlay",
-			"browser": "ZprdQa_browser",
-			"viewer": "ZprdQa_viewer",
-			"plain": "ZprdQa_plain",
-			"actionLabel": "ZprdQa_actionLabel",
-			"panel": "ZprdQa_panel",
-			"rootSelect": "ZprdQa_rootSelect",
-			"actionButtonRail": "ZprdQa_actionButtonRail",
-			"name": "ZprdQa_name",
-			"backdrop": "ZprdQa_backdrop",
-			"error": "ZprdQa_error",
-			"actionButton": "ZprdQa_actionButton",
-			"iconButton": "ZprdQa_iconButton",
-			"row": "ZprdQa_row",
-			"notice": "ZprdQa_notice",
+			"viewerHeader": "ZprdQa_viewerHeader",
+			"bodyCollapsed": "ZprdQa_bodyCollapsed",
 			"meta": "ZprdQa_meta",
+			"menuItem": "ZprdQa_menuItem",
+			"notice": "ZprdQa_notice",
+			"header": "ZprdQa_header",
+			"panel": "ZprdQa_panel",
+			"iconButton": "ZprdQa_iconButton",
+			"name": "ZprdQa_name",
+			"actionButtonRail": "ZprdQa_actionButtonRail",
+			"viewerActions": "ZprdQa_viewerActions",
+			"menu": "ZprdQa_menu",
+			"overlay": "ZprdQa_overlay",
+			"actionButton": "ZprdQa_actionButton",
+			"rootSelect": "ZprdQa_rootSelect",
+			"breadcrumbs": "ZprdQa_breadcrumbs",
+			"backdrop": "ZprdQa_backdrop",
+			"row": "ZprdQa_row",
+			"textButton": "ZprdQa_textButton",
+			"error": "ZprdQa_error",
 			"body": "ZprdQa_body",
-			"list": "ZprdQa_list"
+			"browser": "ZprdQa_browser",
+			"list": "ZprdQa_list",
+			"actionLabel": "ZprdQa_actionLabel",
+			"editor": "ZprdQa_editor",
+			"fileTitle": "ZprdQa_fileTitle",
+			"plain": "ZprdQa_plain",
+			"htmlPreview": "ZprdQa_htmlPreview",
+			"viewer": "ZprdQa_viewer",
+			"crumb": "ZprdQa_crumb"
 		};
 		//#endregion
 		//#region src/client/WorkspaceFileViewerPanel.tsx
@@ -4280,12 +4360,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			});
 		}
 		/** Frame overlay that browses configured roots and previews Markdown/plain text files. */
-		function WorkspaceFileViewerOverlay({ roots, list, read, t }) {
+		function WorkspaceFileViewerOverlay({ roots, list, read, save, addToChat, t }) {
 			const open = usePanelOpen();
 			const [rootRows, setRootRows] = (0, react.useState)([]);
 			const [rootId, setRootId] = (0, react.useState)("");
 			const [listing, setListing] = (0, react.useState)();
 			const [file, setFile] = (0, react.useState)();
+			const [explorerOpen, setExplorerOpen] = (0, react.useState)(true);
+			const [editMode, setEditMode] = (0, react.useState)(false);
+			const [draft, setDraft] = (0, react.useState)("");
+			const [saving, setSaving] = (0, react.useState)(false);
+			const [menu, setMenu] = (0, react.useState)();
 			const [loading, setLoading] = (0, react.useState)(false);
 			const [error, setError] = (0, react.useState)();
 			(0, react.useEffect)(() => {
@@ -4298,6 +4383,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setRootRows(rows);
 					const nextRoot = rows[0]?.id ?? "";
 					setRootId(nextRoot);
+					setEditMode(false);
+					setDraft("");
 					if (nextRoot === "") return void 0;
 					return list(nextRoot, "");
 				}).then((nextListing) => {
@@ -4324,6 +4411,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setRootId(nextRootId);
 					setListing(nextListing);
 					setFile(void 0);
+					setEditMode(false);
+					setDraft("");
+					setMenu(void 0);
 				}).catch((cause) => {
 					setError(cause instanceof Error ? cause.message : String(cause));
 				}).finally(() => {
@@ -4334,14 +4424,41 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (rootId === "") return;
 				setLoading(true);
 				setError(void 0);
-				read(rootId, path).then(setFile).catch((cause) => {
+				read(rootId, path).then((nextFile) => {
+					setFile(nextFile);
+					setDraft(nextFile.content);
+					setEditMode(false);
+				}).catch((cause) => {
 					setError(cause instanceof Error ? cause.message : String(cause));
 				}).finally(() => {
 					setLoading(false);
 				});
 			};
-			if (!open) return null;
+			const saveFile = () => {
+				if (file === void 0 || rootId === "") return;
+				setSaving(true);
+				setError(void 0);
+				save(rootId, file.path, draft).then((nextFile) => {
+					setFile(nextFile);
+					setDraft(nextFile.content);
+					setEditMode(false);
+				}).catch((cause) => {
+					setError(cause instanceof Error ? cause.message : String(cause));
+				}).finally(() => {
+					setSaving(false);
+				});
+			};
 			const selectedRoot = rootRows.find((root) => root.id === rootId);
+			const addPathToChat = (relativePath) => {
+				if (selectedRoot === void 0) return;
+				try {
+					addToChat(rootPath(selectedRoot, relativePath));
+				} catch (cause) {
+					setError(cause instanceof Error ? cause.message : String(cause));
+				}
+				setMenu(void 0);
+			};
+			if (!open) return null;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: WorkspaceFileViewerPanel_module_css_default.overlay,
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
@@ -4354,130 +4471,276 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 					className: WorkspaceFileViewerPanel_module_css_default.panel,
 					"aria-label": t("panel.title"),
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-						className: WorkspaceFileViewerPanel_module_css_default.header,
-						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-								className: WorkspaceFileViewerPanel_module_css_default.title,
-								children: t("panel.title")
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-								label: t("panel.refresh"),
-								delayMs: 500,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-									type: "button",
-									className: WorkspaceFileViewerPanel_module_css_default.iconButton,
-									"aria-label": t("panel.refresh"),
-									onClick: () => {
-										loadDirectory(rootId, listing?.path ?? "");
-									},
-									disabled: rootId === "",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconRefreshOutline16, {})
-								})
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-								label: t("panel.close"),
-								delayMs: 500,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-									type: "button",
-									className: WorkspaceFileViewerPanel_module_css_default.iconButton,
-									"aria-label": t("panel.close"),
-									onClick: () => {
-										setPanelOpen(false);
-									},
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutline16, {})
-								})
-							})
-						]
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: WorkspaceFileViewerPanel_module_css_default.body,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: WorkspaceFileViewerPanel_module_css_default.browser,
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+							className: WorkspaceFileViewerPanel_module_css_default.header,
 							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
-									className: WorkspaceFileViewerPanel_module_css_default.rootSelect,
-									"aria-label": t("root.label"),
-									value: rootId,
-									onChange: (event) => {
-										loadDirectory(event.currentTarget.value, "");
-									},
-									children: rootRows.map((root) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
-										value: root.id,
-										children: root.label
-									}, root.id))
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+									className: WorkspaceFileViewerPanel_module_css_default.title,
+									children: t("panel.title")
 								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("nav", {
-									className: WorkspaceFileViewerPanel_module_css_default.breadcrumbs,
-									"aria-label": selectedRoot?.label ?? t("breadcrumb.root"),
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+									label: explorerOpen ? t("panel.collapse") : t("panel.expand"),
+									delayMs: 500,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 										type: "button",
-										className: WorkspaceFileViewerPanel_module_css_default.crumb,
+										className: WorkspaceFileViewerPanel_module_css_default.iconButton,
+										"aria-label": explorerOpen ? t("panel.collapse") : t("panel.expand"),
 										onClick: () => {
-											loadDirectory(rootId, "");
+											setExplorerOpen((value) => !value);
 										},
-										children: t("breadcrumb.root")
-									}), listing?.breadcrumbs.map((crumb) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-										type: "button",
-										className: WorkspaceFileViewerPanel_module_css_default.crumb,
-										onClick: () => {
-											loadDirectory(rootId, crumb.path);
-										},
-										children: crumb.name
-									}, crumb.path))]
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconPanelLeftOutline16, {})
+									})
 								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: WorkspaceFileViewerPanel_module_css_default.list,
-									children: [
-										loading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-											className: WorkspaceFileViewerPanel_module_css_default.notice,
-											children: t("loading")
-										}),
-										error !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-											className: WorkspaceFileViewerPanel_module_css_default.error,
-											children: [
-												t("error.title"),
-												": ",
-												error
-											]
-										}),
-										!loading && error === void 0 && listing?.entries.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-											className: WorkspaceFileViewerPanel_module_css_default.notice,
-											children: t("empty")
-										}),
-										listing?.entries.map((entry) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EntryRow, {
-											entry,
-											onDirectory: (path) => {
-												loadDirectory(rootId, path);
-											},
-											onFile: loadFile,
-											t
-										}, `${entry.kind}:${entry.path}`))
-									]
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+									label: t("panel.refresh"),
+									delayMs: 500,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+										type: "button",
+										className: WorkspaceFileViewerPanel_module_css_default.iconButton,
+										"aria-label": t("panel.refresh"),
+										onClick: () => {
+											loadDirectory(rootId, listing?.path ?? "");
+										},
+										disabled: rootId === "",
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconRefreshOutline16, {})
+									})
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+									label: t("panel.close"),
+									delayMs: 500,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+										type: "button",
+										className: WorkspaceFileViewerPanel_module_css_default.iconButton,
+										"aria-label": t("panel.close"),
+										onClick: () => {
+											setPanelOpen(false);
+										},
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutline16, {})
+									})
 								})
 							]
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							className: WorkspaceFileViewerPanel_module_css_default.viewer,
-							children: file !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-								className: WorkspaceFileViewerPanel_module_css_default.fileTitle,
-								children: file.name
-							}), file.mode === "markdown" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, { text: file.content }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
-								className: WorkspaceFileViewerPanel_module_css_default.plain,
-								children: file.content
-							})] })
-						})]
-					})]
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: clsx(WorkspaceFileViewerPanel_module_css_default.body, !explorerOpen && WorkspaceFileViewerPanel_module_css_default.bodyCollapsed),
+							children: [explorerOpen && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: WorkspaceFileViewerPanel_module_css_default.browser,
+								children: [
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
+										className: WorkspaceFileViewerPanel_module_css_default.rootSelect,
+										"aria-label": t("root.label"),
+										value: rootId,
+										onChange: (event) => {
+											loadDirectory(event.currentTarget.value, "");
+										},
+										children: rootRows.map((root) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
+											value: root.id,
+											children: root.label
+										}, root.id))
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("nav", {
+										className: WorkspaceFileViewerPanel_module_css_default.breadcrumbs,
+										"aria-label": selectedRoot?.label ?? t("breadcrumb.root"),
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+											type: "button",
+											className: WorkspaceFileViewerPanel_module_css_default.crumb,
+											onClick: () => {
+												loadDirectory(rootId, "");
+											},
+											children: t("breadcrumb.root")
+										}), listing?.breadcrumbs.map((crumb) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+											type: "button",
+											className: WorkspaceFileViewerPanel_module_css_default.crumb,
+											onClick: () => {
+												loadDirectory(rootId, crumb.path);
+											},
+											children: crumb.name
+										}, crumb.path))]
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+										className: WorkspaceFileViewerPanel_module_css_default.list,
+										children: [
+											loading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+												className: WorkspaceFileViewerPanel_module_css_default.notice,
+												children: t("loading")
+											}),
+											error !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+												className: WorkspaceFileViewerPanel_module_css_default.error,
+												children: [
+													t("error.title"),
+													": ",
+													error
+												]
+											}),
+											!loading && error === void 0 && listing?.entries.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+												className: WorkspaceFileViewerPanel_module_css_default.notice,
+												children: t("empty")
+											}),
+											listing?.entries.map((entry) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EntryRow, {
+												entry,
+												onDirectory: (path) => {
+													loadDirectory(rootId, path);
+												},
+												onFile: loadFile,
+												onMenu: (event, path) => {
+													event.preventDefault();
+													setMenu({
+														x: event.clientX,
+														y: event.clientY,
+														path
+													});
+												},
+												onTouchMenu: (point, path) => {
+													setMenu({
+														x: point.x,
+														y: point.y,
+														path
+													});
+												},
+												t
+											}, `${entry.kind}:${entry.path}`))
+										]
+									})
+								]
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: WorkspaceFileViewerPanel_module_css_default.viewer,
+								children: [file === void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									className: WorkspaceFileViewerPanel_module_css_default.notice,
+									children: t("viewer.empty")
+								}), file !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: WorkspaceFileViewerPanel_module_css_default.viewerHeader,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+										className: WorkspaceFileViewerPanel_module_css_default.fileTitle,
+										children: file.name
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+										className: WorkspaceFileViewerPanel_module_css_default.viewerActions,
+										children: [editMode ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+											type: "button",
+											className: WorkspaceFileViewerPanel_module_css_default.textButton,
+											onClick: saveFile,
+											disabled: saving,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCheckOutline16, {}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: saving ? t("viewer.saving") : t("viewer.save") })]
+										}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+											type: "button",
+											className: WorkspaceFileViewerPanel_module_css_default.textButton,
+											onClick: () => {
+												setDraft(file.content);
+												setEditMode(false);
+											},
+											disabled: saving,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutline16, {}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t("viewer.cancel") })]
+										})] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+											label: t("viewer.edit"),
+											delayMs: 500,
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+												type: "button",
+												className: WorkspaceFileViewerPanel_module_css_default.iconButton,
+												"aria-label": t("viewer.edit"),
+												onClick: () => {
+													setEditMode(true);
+												},
+												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconEditOutline16, {})
+											})
+										}), editMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+											label: t("viewer.view"),
+											delayMs: 500,
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+												type: "button",
+												className: WorkspaceFileViewerPanel_module_css_default.iconButton,
+												"aria-label": t("viewer.view"),
+												onClick: () => {
+													setEditMode(false);
+												},
+												disabled: saving,
+												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconBrowseOutline16, {})
+											})
+										})]
+									})]
+								}), editMode ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("textarea", {
+									className: WorkspaceFileViewerPanel_module_css_default.editor,
+									value: draft,
+									onChange: (event) => {
+										setDraft(event.currentTarget.value);
+									}
+								}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FilePreview, { file })] })]
+							})]
+						}),
+						menu !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							className: WorkspaceFileViewerPanel_module_css_default.menu,
+							style: {
+								left: menu.x,
+								top: menu.y
+							},
+							role: "menu",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+								type: "button",
+								className: WorkspaceFileViewerPanel_module_css_default.menuItem,
+								role: "menuitem",
+								onClick: () => {
+									addPathToChat(menu.path);
+								},
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconNewChatOutline16, {}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t("menu.addToChat") })]
+							})
+						})
+					]
 				})]
 			});
 		}
-		function EntryRow({ entry, onDirectory, onFile, t }) {
+		function FilePreview({ file }) {
+			if (file.mode === "markdown") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, { text: file.content });
+			if (file.mode === "html") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
+				className: WorkspaceFileViewerPanel_module_css_default.htmlPreview,
+				sandbox: "",
+				srcDoc: file.content,
+				title: file.name
+			});
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
+				className: WorkspaceFileViewerPanel_module_css_default.plain,
+				children: file.content
+			});
+		}
+		function rootPath(root, relativePath) {
+			if (relativePath === "") return root.path;
+			return `${root.path.replace(/\/+$/u, "")}/${relativePath}`;
+		}
+		function EntryRow({ entry, onDirectory, onFile, onMenu, onTouchMenu, t }) {
+			const longPress = (0, react.useRef)();
+			const longPressed = (0, react.useRef)(false);
+			const clearLongPress = () => {
+				if (longPress.current !== void 0) window.clearTimeout(longPress.current);
+				longPress.current = void 0;
+			};
+			(0, react.useEffect)(() => clearLongPress, []);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				type: "button",
 				className: WorkspaceFileViewerPanel_module_css_default.row,
-				disabled: entry.kind === "file" && !entry.readable,
+				"aria-disabled": entry.kind === "file" && !entry.readable,
 				title: entry.kind === "file" && !entry.readable ? t("unsupported") : void 0,
+				onContextMenu: (event) => {
+					onMenu(event, entry.path);
+				},
+				onTouchStart: (event) => {
+					clearLongPress();
+					const touch = event.touches[0];
+					if (touch === void 0) return;
+					longPress.current = window.setTimeout(() => {
+						longPressed.current = true;
+						onTouchMenu({
+							x: touch.clientX,
+							y: touch.clientY
+						}, entry.path);
+					}, 550);
+				},
+				onTouchMove: clearLongPress,
+				onTouchEnd: clearLongPress,
+				onTouchCancel: clearLongPress,
 				onClick: () => {
+					if (longPressed.current) {
+						longPressed.current = false;
+						return;
+					}
 					if (entry.kind === "directory") onDirectory(entry.path);
-					else onFile(entry.path);
+					else if (entry.readable) onFile(entry.path);
 				},
 				children: [
 					entry.kind === "directory" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconFolderClose16, {}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCodeOutline16, {}),
@@ -4504,13 +4767,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"panel.title": "工作区文件",
 			"panel.close": "关闭文件浏览器",
 			"panel.refresh": "刷新",
+			"panel.collapse": "收起文件夹栏",
+			"panel.expand": "展开文件夹栏",
 			"root.label": "根目录",
 			"loading": "正在加载...",
 			"empty": "此文件夹为空",
 			"error.title": "无法加载",
 			"unsupported": "不支持预览此文件类型",
 			"file.size": "{size} bytes",
-			"breadcrumb.root": "根目录"
+			"breadcrumb.root": "根目录",
+			"menu.addToChat": "添加到聊天",
+			"chat.added": "已添加到聊天输入",
+			"chat.noSession": "没有可用的聊天会话",
+			"viewer.edit": "编辑文件",
+			"viewer.view": "查看文件",
+			"viewer.save": "保存",
+			"viewer.cancel": "取消",
+			"viewer.empty": "选择一个文本文件进行预览",
+			"viewer.saving": "正在保存..."
 		};
 		/** English dictionary, checked complete against the zh key set. */
 		const en = {
@@ -4519,13 +4793,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"panel.title": "Workspace files",
 			"panel.close": "Close file browser",
 			"panel.refresh": "Refresh",
+			"panel.collapse": "Collapse folders",
+			"panel.expand": "Expand folders",
 			"root.label": "Root",
 			"loading": "Loading...",
 			"empty": "This folder is empty",
 			"error.title": "Could not load",
 			"unsupported": "This file type cannot be previewed",
 			"file.size": "{size} bytes",
-			"breadcrumb.root": "Root"
+			"breadcrumb.root": "Root",
+			"menu.addToChat": "Add to chat",
+			"chat.added": "Added to chat input",
+			"chat.noSession": "No active chat session is available",
+			"viewer.edit": "Edit file",
+			"viewer.view": "View file",
+			"viewer.save": "Save",
+			"viewer.cancel": "Cancel",
+			"viewer.empty": "Select a text file to preview",
+			"viewer.saving": "Saving..."
 		};
 		//#endregion
 		//#region src/client/index.ts
@@ -4534,7 +4819,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		const inject = [
 			"slots",
 			"locale",
-			"remote"
+			"remote",
+			"sessions",
+			"conversation"
 		];
 		/** Mount the package Remote contribution, sidebar action, and shell overlay. */
 		async function apply(ctx) {
@@ -4563,6 +4850,21 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const result = await remote().read(rootId, path);
 					if (!result.ok) throw new Error(result.error.message);
 					return result.value;
+				},
+				save: async (rootId, path, content) => {
+					const result = await remote().save(rootId, path, content);
+					if (!result.ok) throw new Error(result.error.message);
+					return result.value;
+				},
+				addToChat: (path) => {
+					const sessionId = ctx.sessions.list.getSnapshot().current;
+					if (sessionId === void 0) throw new Error(ctx.locale.bind(NS)("chat.noSession"));
+					const scope = ctx.sessions.scope(sessionId);
+					if (scope === void 0) throw new Error(ctx.locale.bind(NS)("chat.noSession"));
+					const input = ctx.conversation.input.for(scope);
+					const draft = input.state.getSnapshot().draft;
+					input.setDraft(insertPath(draft, path));
+					input.notify("info", ctx.locale.bind(NS)("chat.added"));
 				}
 			});
 			ctx.slots.inject("sidebar.footer.action", () => ctx.slots.register({
@@ -4579,6 +4881,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				locale: NS,
 				inject: injected
 			}, WorkspaceFileViewerOverlay));
+		}
+		function insertPath(draft, path) {
+			if (draft === "") return path;
+			return `${draft.replace(/\s*$/u, "")}\n${path}`;
 		}
 		//#endregion
 		exports.apply = apply;

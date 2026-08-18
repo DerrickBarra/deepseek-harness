@@ -6,6 +6,7 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import {
   WorkspaceFileViewerAction, WorkspaceFileViewerOverlay, type WorkspaceFileViewerInjected,
 } from './WorkspaceFileViewerPanel.tsx'
@@ -24,7 +25,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** Services required before this plugin can mount its own Remote namespace and UI. */
-export const inject = ['slots', 'locale', 'remote']
+export const inject = ['slots', 'locale', 'remote', 'sessions', 'conversation']
 
 /** Mount the package Remote contribution, sidebar action, and shell overlay. */
 export async function apply(ctx: ClientContext): Promise<void> {
@@ -51,6 +52,23 @@ export async function apply(ctx: ClientContext): Promise<void> {
       if (!result.ok) throw new Error(result.error.message)
       return result.value
     },
+    save: async (rootId, path, content) => {
+      const result = await remote().save(rootId, path, content)
+      if (!result.ok) throw new Error(result.error.message)
+      return result.value
+    },
+    addToChat: (path) => {
+      const sessionId = ctx.sessions.list.getSnapshot().current
+      if (sessionId === undefined) {
+        throw new Error(ctx.locale.bind(NS)('chat.noSession'))
+      }
+      const scope = ctx.sessions.scope(sessionId)
+      if (scope === undefined) throw new Error(ctx.locale.bind(NS)('chat.noSession'))
+      const input = ctx.conversation.input.for(scope)
+      const draft = input.state.getSnapshot().draft
+      input.setDraft(insertPath(draft, path))
+      input.notify('info', ctx.locale.bind(NS)('chat.added'))
+    },
   })
   ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
     name: 'sidebar.footer.action',
@@ -66,4 +84,9 @@ export async function apply(ctx: ClientContext): Promise<void> {
     locale: NS,
     inject: injected,
   }, WorkspaceFileViewerOverlay))
+}
+
+function insertPath(draft: string, path: string): string {
+  if (draft === '') return path
+  return `${draft.replace(/\s*$/u, '')}\n${path}`
 }

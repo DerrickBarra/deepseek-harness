@@ -1,4 +1,4 @@
-import { mkdtemp, rm, symlink, writeFile, mkdir } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, symlink, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -54,6 +54,7 @@ describe('WorkspaceFileViewerGateway', () => {
       { method: 'roots', invocation: { kind: 'direct' } },
       { method: 'list', invocation: { kind: 'direct' } },
       { method: 'read', invocation: { kind: 'direct' } },
+      { method: 'save', invocation: { kind: 'direct' } },
     ])
   })
 
@@ -103,6 +104,31 @@ describe('WorkspaceFileViewerGateway', () => {
     })
   })
 
+  it('saves supported UTF-8 text files inside the configured root', async () => {
+    const root = await tempRoot()
+    await writeFile(join(root, 'README.md'), '# Old\n')
+    await writeFile(join(root, 'index.html'), '<h1>Old</h1>')
+    const viewer = await harness(root)
+
+    await expect(viewer.read('0', 'index.html')).resolves.toMatchObject({
+      name: 'index.html',
+      mode: 'html',
+      content: '<h1>Old</h1>',
+    })
+    await expect(viewer.save('0', 'README.md', '# New\n')).resolves.toMatchObject({
+      name: 'README.md',
+      mode: 'markdown',
+      content: '# New\n',
+      size: 6,
+    })
+    await expect(readFile(join(root, 'README.md'), 'utf8')).resolves.toBe('# New\n')
+    await expect(viewer.save('0', 'index.html', '<h1>New</h1>')).resolves.toMatchObject({
+      name: 'index.html',
+      mode: 'html',
+      content: '<h1>New</h1>',
+    })
+  })
+
   it('rejects traversal, symlink escapes, unsupported files, and oversized reads', async () => {
     const root = await tempRoot()
     const outside = await tempRoot()
@@ -124,6 +150,10 @@ describe('WorkspaceFileViewerGateway', () => {
     await expect(viewer.read('0', 'archive.zip')).rejects.toThrow('unsupported')
     await expect(viewer.read('0', 'large.txt')).rejects.toThrow('exceeds')
     await expect(viewer.read('missing', 'ok.txt')).rejects.toThrow('unknown')
+    await expect(viewer.save('0', '../ok.txt', 'no')).rejects.toThrow('escapes')
+    await expect(viewer.save('0', 'secret-link.txt', 'no')).rejects.toThrow('escapes')
+    await expect(viewer.save('0', 'archive.zip', 'no')).rejects.toThrow('unsupported')
+    await expect(viewer.save('0', 'large.txt', '12345')).rejects.toThrow('exceeds')
   })
 
   it('validates configured roots and fills default configuration values', async () => {

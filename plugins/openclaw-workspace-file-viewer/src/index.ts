@@ -1,7 +1,7 @@
 /** Allowlisted local folder listing and safe text-file reads for the web UI. */
 
 import { constants } from 'node:fs'
-import { access, readFile, readdir, realpath, stat } from 'node:fs/promises'
+import { access, readFile, readdir, realpath, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
@@ -48,6 +48,7 @@ const TEXT_EXTENSIONS = new Set([
   '.xml', '.yaml', '.yml',
 ])
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.mdx'])
+const HTML_EXTENSIONS = new Set(['.html'])
 const KIND_ORDER = { directory: 0, file: 1 } as const satisfies Record<WorkspaceFileViewerEntry['kind'], number>
 
 /** Host plugin configuration schema. */
@@ -175,9 +176,39 @@ export class WorkspaceFileViewerGateway extends TypertRemoteService {
       root: toRootView(root),
       path: relative,
       name: entryName(relative),
-      mode: MARKDOWN_EXTENSIONS.has(extensionOf(relative)) ? 'markdown' : 'text',
+      mode: modeOf(relative),
       content,
       size: fileStat.size,
+    }
+  }
+
+  /**
+   * Save UTF-8 text to one supported text file under an allowlisted root.
+   * @param rootId - Root id returned by `roots`.
+   * @param requestPath - Relative file path from that root.
+   * @param content - UTF-8 text content to write.
+   * @returns The re-read file payload after saving.
+   */
+  @Remote('save')
+  async save(rootId: string, requestPath: string, content: string): Promise<WorkspaceFileViewerFile> {
+    const root = await this.requireRoot(rootId)
+    const relative = normalizeRelative(requestPath)
+    if (relative === '') throw new Error('file path is required')
+    const absolute = await this.resolveInside(root, relative)
+    const fileStat = await stat(absolute)
+    if (!fileStat.isFile()) throw new Error(`not a file: ${relative}`)
+    if (!isReadableTextPath(relative)) throw new Error(`unsupported file extension: ${relative}`)
+    const bytes = Buffer.byteLength(content, 'utf8')
+    if (bytes > this.maxFileBytes) throw new Error(`file exceeds ${this.maxFileBytes} bytes: ${relative}`)
+    await access(absolute, constants.W_OK)
+    await writeFile(absolute, content, 'utf8')
+    return {
+      root: toRootView(root),
+      path: relative,
+      name: entryName(relative),
+      mode: modeOf(relative),
+      content,
+      size: bytes,
     }
   }
 
@@ -224,6 +255,13 @@ export class WorkspaceFileViewerGateway extends TypertRemoteService {
       readable: false,
     }))
   }
+}
+
+function modeOf(filePath: string): WorkspaceFileViewerFile['mode'] {
+  const extension = extensionOf(filePath)
+  if (MARKDOWN_EXTENSIONS.has(extension)) return 'markdown'
+  if (HTML_EXTENSIONS.has(extension)) return 'html'
+  return 'text'
 }
 
 export default WorkspaceFileViewerGateway

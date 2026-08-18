@@ -41,7 +41,7 @@ export interface WorkspaceFileViewerFile {
   /** Base file name. */
   readonly name: string
   /** Render mode the client should use. */
-  readonly mode: 'markdown' | 'text'
+  readonly mode: 'html' | 'markdown' | 'text'
   /** UTF-8 decoded content. */
   readonly content: string
   /** Physical byte size read from disk. */
