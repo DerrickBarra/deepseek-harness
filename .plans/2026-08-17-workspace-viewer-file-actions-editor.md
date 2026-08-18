@@ -2,8 +2,8 @@
 
 **Date:** 2026-08-17
 **Status:** In Progress
-**Last Updated:** 2026-08-17 21:05 EDT
-**Blocked Reason:** None; remediation bead `oc-rmv` is complete and the feature is ready to return to QA bead `oc-qff`.
+**Last Updated:** 2026-08-17 21:11 EDT
+**Blocked Reason:** QA rerun still fails Add to chat on the served DSH surface; `oc-qff` remains `in_progress` and audit bead `oc-0p2` must stay open.
 **Agent:** `chip`
 
 ---
@@ -151,6 +151,65 @@ Blocking failure:
 
 Bead `oc-qff` remains `in_progress`; audit bead `oc-0p2` is untouched. Follow-up remediation bead `oc-rmv` was created from this QA failure.
 
+#### QA Rerun After `oc-rmv`
+
+**Status:** ❌ Failed
+
+**Evidence:** `/tmp/dsh-workspace-viewer-qa-rerun/`
+
+Files captured:
+
+- `/tmp/dsh-workspace-viewer-qa-rerun/01-panel-open-repo-root.png`
+- `/tmp/dsh-workspace-viewer-qa-rerun/02-add-to-chat-file.png`
+- `/tmp/dsh-workspace-viewer-qa-rerun/03-add-to-chat-folder.png`
+- `/tmp/dsh-workspace-viewer-qa-rerun/04-collapsed-selected-file.png`
+- `/tmp/dsh-workspace-viewer-qa-rerun/05-expanded-selected-file.png`
+- `/tmp/dsh-workspace-viewer-qa-rerun/06-markdown-saved.png`
+- `/tmp/dsh-workspace-viewer-qa-rerun/07-markdown-cancel.png`
+- `/tmp/dsh-workspace-viewer-qa-rerun/08-html-preview.png`
+- `/tmp/dsh-workspace-viewer-qa-rerun/09-html-edit-cancel.png`
+- `/tmp/dsh-workspace-viewer-qa-rerun/events.json`
+- `/tmp/dsh-workspace-viewer-qa-rerun/results.json`
+
+Commands/run method:
+
+```sh
+sed -n '1,220p' README.md
+bd show oc-qff --json
+git log --oneline -n 12 --decorate
+git show --stat --oneline --decorate 98035a8385
+curl -k -I --max-time 10 https://derrick-surface-pro-8.tail613fcb.ts.net:8443/
+node - <<'NODE'
+# Playwright script loaded /home/derrick/.npm-global/lib/node_modules/playwright, dismissed the testing notice,
+# opened Workspace files, selected OpenClaw workspace, navigated to projects/deepseek-harness, used right-click
+# Add to chat on qa-workspace-viewer-rerun.md and plugins, then exercised collapse/expand, Markdown save/cancel,
+# and HTML preview/edit/cancel. It wrote screenshots plus events.json/results.json under /tmp/dsh-workspace-viewer-qa-rerun/.
+NODE
+```
+
+Temporary files used under the allowlisted repo root:
+
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-rerun.md`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-rerun.html`
+
+Both temporary files were removed after the rerun.
+
+Passing rerun checks:
+
+- Workspace viewer loaded on the served app with the `Workspace files` panel visible and no viewer boot/runtime crash.
+- Explorer root switching to `OpenClaw workspace` and navigation to `projects/deepseek-harness` worked.
+- Explorer collapse and expand preserved the selected Markdown file preview.
+- Markdown view/edit mode worked; Save wrote the edited content to the host file under the allowlisted workspace root.
+- Cancel from Markdown edit mode exited without writing the changed draft.
+- HTML view mode rendered the file in an iframe preview, edit mode exposed the HTML source text, and Cancel did not write the changed HTML draft.
+- No in-scope viewer-path console, network, or runtime errors were observed. The only recorded errors were the known served-app `/api/credentials.describe` and `/api/settings.describe` HTTP 403 noise.
+
+Blocking rerun failure:
+
+- Add to chat still failed for both file and folder rows on the served DSH surface after remediation commit `98035a8385`. Right-clicking `qa-workspace-viewer-rerun.md` and `plugins`, then choosing `Add to chat`, left the visible chat draft empty (`draft=""`). The expected inserted paths were `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-rerun.md` and `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins`.
+
+Bead `oc-qff` remains `in_progress`; audit bead `oc-0p2` is untouched and should not proceed to closure.
+
 ---
 
 ### Task 3: Fix Add To Chat Without Active Session
@@ -229,11 +288,11 @@ Commit: `98035a8385` — `fix(workspace-file-viewer): create chat session before
 
 ## Final Results
 
-**Status:** ✅ Remediation Complete; QA Retry Pending
+**Status:** ❌ QA Rerun Failed; Add To Chat Still Blocking Audit
 
-**What We Built:** Implementation is present, committed, and mostly works on the served DSH surface. The QA-discovered Add to chat failure has been remediated in the workspace viewer client and is ready for QA retry.
+**What We Built:** Implementation is present, committed, and mostly works on the served DSH surface. The QA-discovered Add to chat failure remains reproducible on the served app after remediation commit `98035a8385`.
 
-**Reference Check:** QA failed on Add to chat; audit is pending.
+**Reference Check:** QA rerun failed on Add to chat; audit is still blocked and pending.
 
 **Commits:**
 - `107d80b73c` — `feat(workspace-file-viewer): add file actions and editor`
