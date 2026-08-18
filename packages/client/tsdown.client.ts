@@ -206,6 +206,16 @@ function clientConfig(id: string, entry: string): UserConfig {
     // opinion for table entries (external above wins), bundle everything else.
     noExternal: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
     plugins: [{
+      // Keep generated browser bundle artifacts suitable for git diff --check
+      // even when bundled dependencies contain template-literal lines with
+      // trailing indentation.
+      name: 'dsh-trim-generated-trailing-whitespace',
+      generateBundle(_options, bundle) {
+        for (const item of Object.values(bundle)) {
+          if (item.type === 'chunk') item.code = item.code.replace(/[ \t]+$/gm, '')
+        }
+      },
+    }, {
       // Bundle purity gate (build-time mirror of the module-edge rules):
       // platform seed entries stay external, inline-safe wire layers inline,
       // and every other @deepseek-ai value import is a build error — a
