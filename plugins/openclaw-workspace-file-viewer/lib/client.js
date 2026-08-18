@@ -4283,37 +4283,37 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			document.head.appendChild(tag);
 		}
 		var WorkspaceFileViewerPanel_module_css_default = {
-			"row": "ZprdQa_row",
-			"actionButtonRail": "ZprdQa_actionButtonRail",
-			"title": "ZprdQa_title",
-			"list": "ZprdQa_list",
-			"menu": "ZprdQa_menu",
-			"header": "ZprdQa_header",
-			"body": "ZprdQa_body",
-			"fileTitle": "ZprdQa_fileTitle",
-			"overlay": "ZprdQa_overlay",
-			"bodyCollapsed": "ZprdQa_bodyCollapsed",
-			"panel": "ZprdQa_panel",
-			"crumb": "ZprdQa_crumb",
-			"error": "ZprdQa_error",
-			"viewerHeader": "ZprdQa_viewerHeader",
-			"textButton": "ZprdQa_textButton",
-			"rootSelect": "ZprdQa_rootSelect",
-			"actionButton": "ZprdQa_actionButton",
-			"backdrop": "ZprdQa_backdrop",
-			"breadcrumbs": "ZprdQa_breadcrumbs",
-			"htmlPreview": "ZprdQa_htmlPreview",
-			"editor": "ZprdQa_editor",
-			"meta": "ZprdQa_meta",
-			"actionLabel": "ZprdQa_actionLabel",
 			"iconButton": "ZprdQa_iconButton",
 			"browser": "ZprdQa_browser",
+			"crumb": "ZprdQa_crumb",
+			"error": "ZprdQa_error",
+			"viewerActions": "ZprdQa_viewerActions",
+			"bodyCollapsed": "ZprdQa_bodyCollapsed",
+			"breadcrumbs": "ZprdQa_breadcrumbs",
+			"list": "ZprdQa_list",
+			"title": "ZprdQa_title",
 			"name": "ZprdQa_name",
+			"editor": "ZprdQa_editor",
+			"actionButtonRail": "ZprdQa_actionButtonRail",
+			"actionButton": "ZprdQa_actionButton",
+			"meta": "ZprdQa_meta",
+			"viewerHeader": "ZprdQa_viewerHeader",
+			"actionLabel": "ZprdQa_actionLabel",
+			"textButton": "ZprdQa_textButton",
+			"overlay": "ZprdQa_overlay",
+			"fileTitle": "ZprdQa_fileTitle",
+			"menu": "ZprdQa_menu",
 			"plain": "ZprdQa_plain",
+			"backdrop": "ZprdQa_backdrop",
 			"menuItem": "ZprdQa_menuItem",
 			"viewer": "ZprdQa_viewer",
-			"viewerActions": "ZprdQa_viewerActions",
-			"notice": "ZprdQa_notice"
+			"notice": "ZprdQa_notice",
+			"panel": "ZprdQa_panel",
+			"header": "ZprdQa_header",
+			"body": "ZprdQa_body",
+			"rootSelect": "ZprdQa_rootSelect",
+			"htmlPreview": "ZprdQa_htmlPreview",
+			"row": "ZprdQa_row"
 		};
 		//#endregion
 		//#region src/client/WorkspaceFileViewerPanel.tsx
@@ -4860,9 +4860,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				addToChat: async (path) => {
 					if (await insertPathIntoVisibleComposer(path)) return;
 					const sessionId = await resolveSessionForDraft(ctx, path);
-					const scope = ctx.sessions.scope(sessionId);
-					const input = scope === void 0 ? void 0 : ctx.conversation.input.for(scope);
-					if (input === void 0) throw new Error(ctx.locale.bind(NS)("chat.noSession"));
+					const binding = ctx.sessions.binding(sessionId);
+					if (binding === void 0) {
+						if (await insertPathIntoVisibleComposer(path)) return;
+						throw new Error(ctx.locale.bind(NS)("chat.noSession"));
+					}
+					const input = ctx.conversation.input.for(binding.ctx);
 					const draft = input.state.getSnapshot().draft;
 					input.setDraft(insertPath(draft, path));
 					input.notify("info", ctx.locale.bind(NS)("chat.added"));

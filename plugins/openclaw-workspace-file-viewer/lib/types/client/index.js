@@ -43,10 +43,13 @@ export async function apply(ctx) {
             if (await insertPathIntoVisibleComposer(path))
                 return;
             const sessionId = await resolveSessionForDraft(ctx, path);
-            const scope = ctx.sessions.scope(sessionId);
-            const input = scope === undefined ? undefined : ctx.conversation.input.for(scope);
-            if (input === undefined)
+            const binding = ctx.sessions.binding(sessionId);
+            if (binding === undefined) {
+                if (await insertPathIntoVisibleComposer(path))
+                    return;
                 throw new Error(ctx.locale.bind(NS)('chat.noSession'));
+            }
+            const input = ctx.conversation.input.for(binding.ctx);
             const draft = input.state.getSnapshot().draft;
             input.setDraft(insertPath(draft, path));
             input.notify('info', ctx.locale.bind(NS)('chat.added'));

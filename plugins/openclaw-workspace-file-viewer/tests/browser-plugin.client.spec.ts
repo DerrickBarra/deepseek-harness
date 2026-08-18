@@ -26,6 +26,7 @@ async function bench(): Promise<{
   connectWorkspace: ReturnType<typeof vi.fn<(workspaceId: WorkspaceId) => Promise<SessionId>>>
   openSession: ReturnType<typeof vi.fn<(sessionId: SessionId) => void>>
   setCurrent: (sessionId: SessionId | undefined) => void
+  setScopeAvailable: (available: boolean) => void
   draft: () => string
   setDraft: (text: string) => void
 }> {
@@ -48,6 +49,7 @@ async function bench(): Promise<{
   let current: SessionId | undefined = 's-active' as SessionId
   let draft = 'existing'
   const scope = new Context()
+  let scopeAvailable = true
   const connectWorkspace = vi.fn<(workspaceId: WorkspaceId) => Promise<SessionId>>()
     .mockResolvedValue('s-new' as SessionId)
   const openSession = vi.fn<(sessionId: SessionId) => void>((sessionId) => { current = sessionId })
@@ -70,7 +72,8 @@ async function bench(): Promise<{
       }),
       subscribe: () => () => {},
     },
-    scope: (sessionId: SessionId) => sessionId === current ? scope : undefined,
+    scope: (sessionId: SessionId) => sessionId === current && scopeAvailable ? scope : undefined,
+    binding: (sessionId: SessionId) => sessionId === current ? { sessionId, session: {}, ctx: scope } : undefined,
     open: openSession,
   } as never)
   ctx.provide('workspaces', {
@@ -111,6 +114,7 @@ async function bench(): Promise<{
   return {
     ctx, fiber, roots, list, read, save, connectWorkspace, openSession,
     setCurrent: sessionId => { current = sessionId },
+    setScopeAvailable: available => { scopeAvailable = available },
     draft: () => draft,
     setDraft: (text) => { draft = text },
   }
@@ -217,6 +221,21 @@ describe('ui-workspace-file-viewer browser half', () => {
   it('creates a workspace session before adding paths when no chat is active', async () => {
     const { ctx, fiber, connectWorkspace, openSession, setCurrent, draft } = await bench()
     setCurrent(undefined)
+    const injected = ctx.slots.entries('shell.overlay')[0]!.inject as unknown as () => WorkspaceFileViewerInjected
+
+    await injected().addToChat('/workspace/repo/plugins')
+
+    expect(connectWorkspace).toHaveBeenCalledWith('ws-repo')
+    expect(openSession).toHaveBeenCalledWith('s-new')
+    expect(draft()).toBe('existing\n/workspace/repo/plugins')
+    await fiber.dispose()
+    await ctx.fiber.dispose()
+  })
+
+  it('uses the new session binding when no active mobile session has a materialized scope yet', async () => {
+    const { ctx, fiber, connectWorkspace, openSession, setCurrent, setScopeAvailable, draft } = await bench()
+    setCurrent(undefined)
+    setScopeAvailable(false)
     const injected = ctx.slots.entries('shell.overlay')[0]!.inject as unknown as () => WorkspaceFileViewerInjected
 
     await injected().addToChat('/workspace/repo/plugins')
