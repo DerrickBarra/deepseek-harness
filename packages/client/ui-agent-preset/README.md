@@ -50,7 +50,7 @@ A roster row carrying `broken` (the host's shape check found the composition mis
 
 Setting the default writes the `agent-presets` settings namespace, which the host exposes to configuration clients ([`dsh-apiproxy`](../../host/apiproxy/README.md) keeps an explicit allowlist — a namespace outside it makes a picker move and then silently forget).
 
-`agentPreset.read`, `copy`, `openDocument`, and `remove` are loopback-pinned ([`dsh-client-connection`](../connection/README.md)): a composition names the plugins a session runs, so reading one is reconnaissance, and the rest manage the roster and drive the host desktop. `agentPreset.list` is not — it carries ids, trust, and the two path-free capability flags, and a LAN client's picker needs it.
+`agentPreset.read`, `copy`, `openDocument`, and `remove` are privileged and pass through the shared `/api` trust fence ([`dsh-client-connection`](../connection/README.md)): loopback and declared `trustedHosts` can call them, while undeclared non-loopback authorities are rejected before RPC dispatch. A composition names the plugins a session runs, so reading one is reconnaissance, and the rest manage the roster and drive the host desktop. `agentPreset.list` carries ids, trust, and the two path-free capability flags every preset picker needs.
 
 ## When the surfaces are absent
 

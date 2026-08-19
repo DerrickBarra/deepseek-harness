@@ -22,7 +22,7 @@ Authoring is a host-side copy, and files are the editor. `agentPreset.write` bec
 ## Load-bearing details
 
 - **Copy target refusal is two checks on purpose.** The roster check refuses any id a root supplies — a user directory named like a shipped preset would be shadowed, so "create" would land a file nothing ever lists; the disk check (`PresetExistsError` before `cp` with `errorOnExist` as the race backstop) refuses a directory occupying the name without being a preset, which discovery cannot see.
-- **The revealed path is response-direction disclosure, loopback-pinned.** The invariant "no browser payload can select an arbitrary filesystem target" is about the request direction; showing the resolved directory to the loopback user is the fallback the plan requires. It never rides the unprivileged `list`.
+- **The revealed path is response-direction disclosure under the `/api` trust fence.** The invariant "no browser payload can select an arbitrary filesystem target" is about the request direction; showing the resolved directory to an accepted caller is the fallback the plan requires. It never rides the ordinary `list`.
 - **The e2e lane pins `nativeOpen: false`** (`agent-preset-authoring.overlay.yml`) — both so goldens render the same branch on macOS dev and headless Linux CI, and so test runs never pop a real file manager. The revealed directory is tokenized as `{{presetRoot}}` by the lane itself, since `normalizeAria` only knows the workspace cwd.
 
 ## Alternatives considered

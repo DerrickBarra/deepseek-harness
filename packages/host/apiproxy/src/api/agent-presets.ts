@@ -3,7 +3,9 @@
  * session, plus the authoring calls behind it.
  *
  * `list` is ordinary: it carries ids and trust, and every preset picker needs
- * it. The authoring calls are privileged and loopback-pinned — a composition
+ * it. The authoring calls are privileged and rely on the shared `/api` trust
+ * fence: loopback and declared trusted hosts may call them, while undeclared
+ * non-loopback authorities are rejected before RPC dispatch. A composition
  * names the plugins a session runs, so reading one is reconnaissance, and
  * although authoring is copy-only (no caller supplies composition text or a
  * path), copying and deleting still rearrange what the deployment offers.

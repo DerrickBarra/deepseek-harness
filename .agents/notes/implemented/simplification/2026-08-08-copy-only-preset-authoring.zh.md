@@ -22,7 +22,7 @@ agent-preset 设置页带着一个网页 YAML 编辑器：`agentPreset.write` �
 ## 关键实现细节
 
 - **复制目标的拒绝刻意分两道检查。** roster 检查拒绝任一根目录提供的 id——与随附 preset 同名的用户目录会被遮蔽，「创建」只会落下一个永远不被列出的文件；磁盘检查（`cp` 之前的 `PresetExistsError`，`errorOnExist` 作竞态兜底）拒绝占着名字却不是 preset 的目录，那是 discovery 看不见的。
-- **展示的路径是响应方向的披露，且钉在环回。**「没有任何浏览器载荷能选中任意文件系统目标」这条不变量说的是请求方向；把解析出的目录展示给环回用户正是方案要求的降级。它绝不搭乘非特权的 `list`。
+- **展示路径是在 `/api` 信任栅栏下的响应方向披露。**「没有任何浏览器载荷能选中任意文件系统目标」这条不变量说的是请求方向；把解析出的目录展示给已通过的调用方正是方案要求的降级。它绝不搭乘普通的 `list`。
 - **e2e lane 钉死 `nativeOpen: false`**（`agent-preset-authoring.overlay.yml`）——既让 golden 在 macOS 开发机与无头 Linux CI 上渲染同一分支，也让测试运行永不弹出真实文件管理器。揭示的目录由 lane 自己 token 化为 `{{presetRoot}}`，因为 `normalizeAria` 只认识 workspace cwd。
 
 ## 考虑过的替代方案
