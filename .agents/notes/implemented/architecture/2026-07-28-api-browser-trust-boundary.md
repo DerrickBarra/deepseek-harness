@@ -17,19 +17,19 @@ Enforce browser trust once, at the carrier, for the entire `/api` prefix — two
 
 Two boundaries stay deliberately out of scope: reachability is the webserver binding's policy (`host: 127.0.0.1 | 0.0.0.0`), and authentication for genuinely remote deployments is deferred work recorded in the connection README — the fence is a confused-deputy defense, not an auth layer. The old guard's loopback-socket check was dropped rather than generalized: with binding expressing reachability and `trustedHosts` naming remote authorities, the socket address adds nothing a header fence does not already cover.
 
-Trusted authorities reach the settings plane (`settings.describe`, `settings.openDocument`, `settings.update`, `settings.replace`, and `settings.mutate`) so remote configuration screens use the same host-backed settings state as loopback browsers. The loopback-only set remains for host-desktop actions, secret-store reads and writes, host-side model discovery with caller-provided endpoint data, and agent-preset authoring.
+Trusted authorities receive loopback-equivalent access to the DSH API. This includes settings, credentials, host-desktop actions, host-side model discovery with caller-provided endpoint data, and agent-preset authoring. That parity is intentional for trusted deployments; an authentication layer remains deferred work.
 
 ## Alternatives considered
 
 - **Per-RPC guards (status quo extended).** Rejected: the guard list trails the method list forever, the highest-value methods were already unguarded, and a loopback rule on browse RPCs would break the remote deployments they exist for.
 - **CORS headers + credential omission.** Rejected: we never want cross-origin reads at all, so answering preflights only widens the surface; refusing them is strictly stronger and simpler.
 - **Auth tokens now.** Rejected for this change: token minting/storage/rotation is real product surface; the fence closes the browser-deputy holes today without pre-deciding the auth design.
-- **Keep all settings RPCs loopback-only.** Rejected: it left trusted remote operators unable to open or persist ordinary configuration screens even though the deployment already named their serving authority.
+- **Keep selected host APIs loopback-only.** Rejected: it left trusted remote operators with a partial host API after the deployment already named their serving authority. Settings, credentials, model discovery, host actions, and preset authoring need the same reachability decision so a trusted remote session behaves like loopback.
 
 ## Consequences
 
 - Any future `/api` method is covered by construction; there is no per-route trust decision left to forget.
 - Non-loopback deployments must have their serving authorities trusted or requests are refused. The dsh CLI keeps its advertised `--host 0.0.0.0` LAN URL working by deriving the machine's LAN IP literals into the connection row (port-less entries — an IP-literal Host cannot be a rebound name, and the bound port may be OS-assigned) and offers `dsh web --trusted-host` for named authorities; compositions the CLI does not boot declare `trustedHosts` themselves. Non-browser automation rides the same fence: loopback, a derived LAN IP, or a declared authority passes; an undeclared DNS alias is refused.
-- Settings UI state is durable for trusted remote browsers instead of falling back to process-local memory.
+- Trusted remote browsers use the same host API surface as loopback browsers.
 - Clients must label POST bodies `application/json` (ours always did; raw-fetch tests gained the header).
 - The trusted-network assumption of an unauthenticated `0.0.0.0` deployment is now documented instead of implicit.
