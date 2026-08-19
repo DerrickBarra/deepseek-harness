@@ -1,6 +1,6 @@
 # @openclaw/dsh-workspace-file-viewer
 
-English
+English | [中文](README.zh.md)
 
 Installable DSH Web profile bundle for allowlisted local folder browsing. The host half exposes a Typert Remote namespace, `workspaceFileViewer`, with `roots`, `list`, and `read` methods. The browser half mounts that Remote contribution, registers the `sidebar.footer.action` button, and opens a `shell.overlay` file viewer panel.
 
