@@ -1,9 +1,9 @@
 # DSH Full Remote Local Parity
 
 **Date:** 2026-08-19
-**Status:** Blocked
-**Last Updated:** 2026-08-19 01:05 EDT
-**Blocked Reason:** Source commits are pushed and the live Chip service has been refreshed; broad validation still depends on `oc-wdk`, `oc-587`, `oc-j50`, and audit `oc-3g0` closing.
+**Status:** Complete
+**Last Updated:** 2026-08-19 02:09 EDT
+**Blocked Reason:** None
 **Agent:** chip
 
 ---
@@ -101,9 +101,9 @@ This is source-level DSH work, not a hotswap-plugin-only change. The final plan 
 **Files Created/Deleted/Modified:**
 - `Pending`
 
-**Status:** ⏳ Audit Retry Blocked
+**Status:** ✅ Complete
 
-**Results:** Initial audit reviewed the source policy, tests, QA evidence, and live loopback/Tailscale probes for commit `9777d79c09`. Behavior evidence passed: focused connection Vitest passed 12/12, `git diff --check` passed, UI reachability returned 200 on loopback and Tailscale, and representative local/remote API probes returned 200 for settings, credentials, host describe, LLM catalog/model discovery, and agent preset read/write cleanup. Audit failed because active docs/comments/Agent Notes still contradicted the new approved parity policy by describing now-remote-capable APIs as loopback-only. Cleanup bead `oc-9wx` then closed with commit `f6e162a8e2`. The audit retry found runtime evidence still clean but identified additional stale preset-authoring docs/comments; cleanup bead `oc-bhc` closed with commit `546abfbb2b`, clearing the blocker. Final audit retry after those cleanup commits again passed behavior evidence, including non-destructive `host.openPath` and `host.pickDirectory` probes returning `404` instead of `403` on both loopback and Tailscale, but found `REF-06` and its Chinese counterpart still described the native picker carrier as loopback-only. Cleanup bead `oc-19c` then closed with commit `1bef9206c4`. The next audit retry confirmed server-side `/api` parity was clean but found trusted-host UI parity still incomplete: Settings General suppresses the `settings.openDocument` controller on non-loopback connections, Produced Files hides **Show in folder** behind `connection.isLoopback`, and the active web workspace file-links Agent Note documents that now-stale loopback-only affordance. Cleanup bead `oc-j50` was created and linked as a blocker of `oc-3g0`.
+**Results:** Initial audit reviewed the source policy, tests, QA evidence, and live loopback/Tailscale probes for commit `9777d79c09`. Behavior evidence passed, but audit failed stale active docs/comments/Agent Notes that still described now-remote-capable APIs as loopback-only. Cleanup beads `oc-9wx`, `oc-bhc`, and `oc-19c` cleared the API policy, preset-authoring, and native-picker doc blockers. The next audit retry found trusted-host UI parity still incomplete, so `oc-j50` fixed Settings General `settings.openDocument` and Produced Files **Show in folder** UI gates, with `oc-761`, `oc-wdk`, and `oc-587` clearing served-bundle, GUI-test, and broad `doc-sync` blockers. The final blocker `oc-arp` updated the web config-plane Agent Note triplet. Final audit then passed and closed `oc-3g0`: source `/api` policy admits loopback plus declared `trustedHosts`, undeclared non-loopback authorities remain blocked before dispatch, explicit loopback-only authority remains available for custom/dedicated carriers, UI affordances are no longer suppressed by `connection.isLoopback`, focused tests and `doc-sync` passed, and live loopback/Tailscale probes matched for the approved API/UI surface.
 
 ---
 
@@ -227,9 +227,9 @@ This is source-level DSH work, not a hotswap-plugin-only change. The final plan 
 - `packages/client/ui-settings-general/src/client/index.ts`
 - `tests pending discovery`
 
-**Status:** ⚠️ Implementation Complete / Validation Blocked
+**Status:** ✅ Complete
 
-**Results:** Coder implemented and pushed commit `ea1b25f149` (`Fix trusted-host native UI parity`). The code update addresses Settings General `settings.openDocument` controller availability and Produced Files **Show in folder** visibility for trusted hosts, with matching Agent Note/i18n updates. Focused package tests, the connection `node-half.host.spec.ts`, targeted translation/Agent Note/link checks, package bundles, `git diff --check`, and `git diff --cached --check` passed. Live DSH web probing was not feasible from the coder handoff because `pnpm dsh web --help` fails on local `~/.dsh/.env` `DSH_RELEASE_PACKAGE` policy and the observed `127.0.0.1:3080` process was another app. The bead remains open because broader requested validation is not clean: `pnpm run test:gui` fails in pre-existing/adjacent remote-browser process-local specs (`ui-settings-models` apply and `ui-theme` apply), and `pnpm run doc-sync` fails on unrelated dirty `plugins/openclaw-workspace-file-viewer/README.md` bilingual pairing. Unrelated workspace-viewer dirty files remain in the worktree and were not touched.
+**Results:** Coder implemented and pushed commit `ea1b25f149` (`Fix trusted-host native UI parity`). The code update addresses Settings General `settings.openDocument` controller availability and Produced Files **Show in folder** visibility for trusted hosts, with matching Agent Note/i18n updates. Focused package tests, the connection `node-half.host.spec.ts`, targeted translation/Agent Note/link checks, package bundles, `git diff --check`, and `git diff --cached --check` passed. Follow-up blocker `oc-761` refreshed the live Chip service from the source checkout and confirmed served-bundle/local/Tailscale parity for the affected affordances. Follow-up blocker `oc-wdk` aligned the stale remote-browser GUI specs and `pnpm run test:gui` passed. Follow-up blocker `oc-587` added the workspace-viewer README bilingual pairing and `pnpm run doc-sync` passed. With those blockers closed, `oc-j50` is ready to close.
 
 ### Task 8: Triage UI Parity Validation Blockers
 
@@ -278,14 +278,16 @@ This is source-level DSH work, not a hotswap-plugin-only change. The final plan 
 **Prompt:** You are the `coder` role on the `primary` lane. Work in `/home/derrick/.openclaw/workspace/projects/deepseek-harness` and read that repo's `README.md` before touching files. This task is bead `oc-wdk`; claim it on start with `bd update oc-wdk --status in_progress --json`. Goal: align the two stale remote-browser GUI specs with the approved trusted-host parity policy. Review `packages/client/ui-settings-models/tests/apply.client.spec.ts` and `packages/client/ui-theme/tests/apply.client.spec.ts`, update expectations so declared trusted hosts receive loopback-equivalent settings API access, and preserve undeclared-remote/custom loopback-only authority behavior. Validate focused specs and `pnpm run test:gui` as appropriate. Commit and push durable changes unless blocked. Close `oc-wdk` only when tests are aligned and validation passes.
 
 **Folders Created/Deleted/Modified:**
-- `Pending`
+- `packages/client/ui-settings-models/`
+- `packages/client/ui-theme/`
 
 **Files Created/Deleted/Modified:**
-- `Pending`
+- `packages/client/ui-settings-models/tests/apply.client.spec.ts`
+- `packages/client/ui-theme/tests/apply.client.spec.ts`
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
-**Results:** Pending.
+**Results:** Coder completed and closed `oc-wdk`. Commit `fd6bcadcc9` (`test: align trusted remote settings parity`) was pushed to `derrick/dsh-chip-workspace-file-viewer` and verified as the remote `HEAD`. The update aligns trusted remote browser GUI specs with loopback-equivalent settings API behavior while preserving the no-settings-authority remote case. Validation reported: focused `pnpm vitest packages/client/ui-settings-models/tests/apply.client.spec.ts packages/client/ui-theme/tests/apply.client.spec.ts --run` passed, `pnpm run test:gui` passed with 3758 passed and 1 skipped, `git diff --check` passed, staged whitespace/lint hooks passed, and `oc-wdk` was closed.
 
 ### Task 11: Add Workspace Viewer README Pairing
 
@@ -296,24 +298,46 @@ This is source-level DSH work, not a hotswap-plugin-only change. The final plan 
 **Prompt:** You are the `coder` role on the `primary` lane. Work in `/home/derrick/.openclaw/workspace/projects/deepseek-harness` and read that repo's `README.md` before touching files. This task is bead `oc-587`; claim it on start with `bd update oc-587 --status in_progress --json`. Goal: unblock broad `doc-sync` by adding the missing bilingual pairing for `plugins/openclaw-workspace-file-viewer/README.md`. Add the Chinese counterpart and `README.i18n.yaml` following repo conventions, validate `pnpm run verify-translation-pairing plugins/openclaw-workspace-file-viewer/README.md` and `pnpm run doc-sync` as appropriate, and do not alter unrelated workspace-viewer implementation dirt unless the doc pairing requires it. Commit and push durable changes unless blocked. Close `oc-587` only when pairing validation passes.
 
 **Folders Created/Deleted/Modified:**
-- `Pending`
+- `plugins/openclaw-workspace-file-viewer/`
 
 **Files Created/Deleted/Modified:**
-- `Pending`
+- `plugins/openclaw-workspace-file-viewer/README.md`
+- `plugins/openclaw-workspace-file-viewer/README.zh.md`
+- `plugins/openclaw-workspace-file-viewer/README.i18n.yaml`
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
-**Results:** Pending.
+**Results:** Coder completed and closed `oc-587`. Commit `500bf879b0` (`docs: pair workspace file viewer README`) was pushed to `derrick/dsh-chip-workspace-file-viewer` and verified as the remote `HEAD`. The cleanup added `plugins/openclaw-workspace-file-viewer/README.zh.md`, updated the English README language switcher, and added `README.i18n.yaml`. Validation reported: `pnpm run verify-translation-pairing plugins/openclaw-workspace-file-viewer/README.md` passed and `pnpm run doc-sync` passed all 28 gates. Existing unrelated workspace-viewer implementation dirty files were preserved.
+
+### Task 12: Clean Web Config-Plane Remote-Parity Agent Note
+
+**Bead ID:** `oc-arp`
+**SubAgent:** `primary`
+**Role:** `coder`
+**References:** `REF-01`, `REF-02`, `REF-03`
+**Prompt:** You are the `coder` role on the `primary` lane. Work in `/home/derrick/.openclaw/workspace/projects/deepseek-harness` and read that repo's `README.md` before touching files. This task is bead `oc-arp`; claim it on start with `bd update oc-arp --status in_progress --json`. Final audit for `oc-3g0` found `.agents/notes/implemented/architecture/2026-07-30-web-config-plane.md` and the Chinese counterpart still say `ui-settings-general` registers `settings.openDocument` only on pages whose current connection reports loopback locality. Update that Agent Note triplet/i18n sidecar if present so it matches trusted-host UI parity: loopback and declared `trustedHosts` share the Settings General **Open configuration file** affordance when `settings.describe` reports `hasDocument`, while undeclared non-loopback authorities remain blocked by the shared `/api` trust fence. Preserve wording that custom/dedicated carriers may still opt into explicit loopback-only authority if relevant. Validate focused Agent Note/docs checks, translation pairing for the touched note, `git diff --check`, and relevant Settings General tests. Commit and push durable changes unless blocked. Close `oc-arp` only when cleanup and validation pass.
+
+**Folders Created/Deleted/Modified:**
+- `.agents/notes/implemented/architecture/`
+
+**Files Created/Deleted/Modified:**
+- `.agents/notes/implemented/architecture/2026-07-30-web-config-plane.md`
+- `.agents/notes/implemented/architecture/2026-07-30-web-config-plane.zh.md`
+- `.agents/notes/implemented/architecture/2026-07-30-web-config-plane.i18n.yaml`
+
+**Status:** ✅ Complete
+
+**Results:** Coder completed and closed `oc-arp`. Commit `efb170d245` updated the web config-plane Agent Note triplet for trusted-host Settings General open-document parity and pushed to `derrick/dsh-chip-workspace-file-viewer`. Validation reported: `pnpm run verify-agent-note-format`, `pnpm run verify-agent-note-classification`, scoped `pnpm run verify-translation-pairing`, `pnpm run doc-sync`, `git diff --check`, relevant Settings General document-action tests, and connection trusted-host parity tests all passed. Parent review reran the scoped translation pairing, `git diff --check HEAD`, focused Settings General plus connection Vitest (`4` files / `31` tests), direct `docs:build`, and full `pnpm run doc-sync` (`28` gates), all passing after one transient documentation-build artifact miss was cleared by rerun.
 
 ---
 
 ## Final Results
 
-**Status:** ⚠️ Partial / Blocked
+**Status:** ✅ Complete
 
-**What We Built:** Source-level trusted-host parity was implemented and pushed for the shared `/api` trust fence, including settings, credentials, host/native routes, model discovery, preset authoring, and the client UI source for Settings General `settings.openDocument` plus Produced Files **Show in folder**. Documentation cleanup landed for the core API policy and related active Agent Notes.
+**What We Built:** Source-level trusted-host parity was implemented and pushed for the shared `/api` trust fence, including settings, credentials, host/native routes, model discovery, preset authoring, and the client UI source for Settings General `settings.openDocument` plus Produced Files **Show in folder**. Documentation cleanup landed for the core API policy and related active Agent Notes. Broad GUI validation, `doc-sync`, live loopback/Tailscale probes, and final audit are clean.
 
-**Reference Check:** `REF-01`, `REF-02`, `REF-03`, `REF-04`, `REF-05`, and `REF-06` were updated or validated through the pushed source commits. The running Chip DSH service now serves refreshed trusted-host UI bundles. Final audit is still blocked by the remaining broad validation follow-ups.
+**Reference Check:** `REF-01`, `REF-02`, `REF-03`, `REF-04`, `REF-05`, and `REF-06` were updated or validated through the pushed source commits. The running Chip DSH service serves refreshed trusted-host UI bundles. Final audit confirmed that stale loopback-only mentions are either removed or valid for custom/test/private carriers and outside-trust-fence cases.
 
 **Commits:**
 - `9777d79c09` - `Allow trusted hosts full API parity`
@@ -321,15 +345,15 @@ This is source-level DSH work, not a hotswap-plugin-only change. The final plan 
 - `546abfbb2b` - `docs: update preset authoring trust parity`
 - `1bef9206c4` - `docs: update native picker trust note`
 - `ea1b25f149` - `Fix trusted-host native UI parity`
+- `fd6bcadcc9` - `test: align trusted remote settings parity`
+- `500bf879b0` - `docs: pair workspace file viewer README`
+- `efb170d245` - `docs: update web config-plane trust parity`
 
 **Lessons Learned:** Full remote/local parity is source-level DSH work, not hotswap-only. Future DSH upgrades need to port both the shared `/api` trust-fence change and the UI affordance changes, then refresh the running service bundles before live parity can be claimed.
 
 **Open Follow-Up Beads:**
-- `oc-wdk` - Align remote-browser settings GUI tests with trusted-host parity.
-- `oc-587` - Add bilingual pairing for workspace viewer README.
-- `oc-j50` - Remains in progress and blocked by `oc-wdk` and `oc-587`.
-- `oc-3g0` - Audit remains in progress until `oc-j50` closes and audit reruns.
+- None for this plan. Remaining workspace-viewer implementation dirt belongs to the separate workspace-viewer file actions plan.
 
 ---
 
-*Last updated on 2026-08-19*
+*Completed on 2026-08-19*
