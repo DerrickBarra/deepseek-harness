@@ -6,7 +6,7 @@ English | [中文](2026-07-27-native-workspace-directory-picker.zh.md)
 
 ## Problem
 
-The desktop GUI asks users to type an absolute path when they add an existing workspace. This is slower and more error-prone than choosing a directory with the operating system's native picker. The GUI is delivered through the local Web carrier, so opening a native dialog also creates a privileged boundary that ordinary remote requests must not cross.
+The desktop GUI asks users to type an absolute path when they add an existing workspace. This is slower and more error-prone than choosing a directory with the operating system's native picker. The GUI is delivered through the Web carrier, so opening a native dialog also creates a privileged host action that must pass the deployment's request trust fence.
 
 ## Decision
 
@@ -25,7 +25,7 @@ The workspace manager must upsert the returned workspace before the selection ca
 
 ## Host boundary
 
-The native dialog RPC is accepted only from a loopback socket with same-origin browser metadata. The RPC does not use the default 30-second request timeout because a system dialog may remain open indefinitely; caller and connection aborts still propagate to the platform process.
+The shared `/api/host.pickDirectory` route uses the same trust fence as other privileged Host calls: loopback and declared `trustedHosts` pass, while undeclared non-loopback authorities are refused before dispatch. The route keeps same-origin browser metadata checks where present. Dedicated or custom RPC carriers may still use explicit loopback-only authority when they opt into that carrier path. The RPC does not use the default 30-second request timeout because a system dialog may remain open indefinitely; caller and connection aborts still propagate to the platform process.
 
 Platform adapters open the dialog without a shell — spawned native tools on POSIX, an in-process COM conversation on Windows:
 
@@ -37,15 +37,15 @@ Platform adapters open the dialog without a shell — spawned native tools on PO
 
 - A custom directory browser duplicates operating-system behavior and permissions, and belongs to the Web implementation rather than this desktop-only change.
 - Reusing the manual path field keeps the current error-prone interaction.
-- Adding authentication infrastructure for one local native dialog would expand the change beyond its threat model; loopback and same-origin checks are sufficient for this carrier.
+- Adding authentication infrastructure for one native dialog would expand the change beyond its threat model; the shared `/api` trust fence is sufficient for this route, while custom carriers may choose a narrower loopback-only authority.
 
 ## Consequences
 
 The current GUI opens one local folder through a native picker on macOS, Windows, and Linux. Cancelling changes no state, failures remain retryable, duplicate paths are idempotent, and distinct same-basename paths coexist as separate Workspaces. The selected workspace and its displayed name refresh before a new blank session starts. This picker is now the only route to a workspace ([one-route Note](../simplification/2026-07-31-one-route-to-add-a-workspace.md)): the operator picks an existing directory, or creates one inside the chooser.
 
-The added host, runtime, component, and GUI tests cover the native boundary, request trust checks, cancellation and failure handling, existing-path reuse, same-basename adoption, and the immediate visible-name update. The privileged RPC remains specific to the local desktop carrier; a remote Web directory browser is outside this decision.
+The added host, runtime, component, and GUI tests cover the native boundary, request trust checks, cancellation and failure handling, existing-path reuse, same-basename adoption, and the immediate visible-name update. The privileged native action remains a host-local desktop capability; a remote Web directory browser is outside this decision.
 
 ## Risks
 
 - Linux desktop environments may provide neither supported picker. The GUI reports that limitation instead of falling back to a typed path.
-- Browser metadata varies outside the supported local carrier. The endpoint intentionally rejects requests that cannot prove the required local same-origin context.
+- Browser metadata varies outside same-origin pages. The endpoint intentionally rejects requests that fail the shared `/api` trust fence.
