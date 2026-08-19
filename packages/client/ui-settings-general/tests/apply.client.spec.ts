@@ -15,7 +15,7 @@ import type { SettingsDocumentActionInjected } from '../src/client/SettingsDocum
 // the shipped Chinese copy, so they state the browser they assume.
 usePinnedBrowserLanguages('zh-CN')
 
-/** The seats this plugin fills for a loopback browser (slot name → expected component). */
+/** The seats this plugin fills for a trusted browser (slot name → expected component). */
 const SEATS = [
   ['settings.trigger', TriggerContent],
   ['settings.header', HeaderContent],
@@ -163,12 +163,14 @@ describe('ui-settings-general apply', () => {
     await vi.waitFor(() => { expect(b.settingsDescribe).toHaveBeenCalledTimes(2) })
   })
 
-  it('withholds the native document action off-loopback', async () => {
+  it('registers the native document action off-loopback after the shared trust fence', async () => {
     const b = await bench(false)
     declare(b.slots)
     const fiber = b.ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
-    expect(b.slots.entries('settings.action')).toEqual([])
+    const action = b.slots.entries('settings.action')[0]!
+    const actionInjected = (action.inject as unknown as () => SettingsDocumentActionInjected)()
+    expect(actionInjected.controller.store.getSnapshot().status).toBe('idle')
     expect(b.settingsDescribe).not.toHaveBeenCalled()
     await fiber.dispose()
     for (const [name] of SEATS) expect(b.slots.entries(name)).toEqual([])
