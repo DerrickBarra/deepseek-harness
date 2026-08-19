@@ -68,19 +68,16 @@ export const Config: z<ConnectionConfig> = z.object({
 
 /**
  * Methods gated to loopback even on a trusted-host deployment. Native dialogs
- * act on the host machine; the settings and credential domains mutate the
- * user's configuration and secret store, and READING them is equally
- * privileged — `settings.describe` returns every exposed namespace's
- * configuration and `credentials.describe` reports whether an arbitrary
+ * act on the host machine; the credential domain reads and mutates the user's
+ * secret store, and `credentials.describe` reports whether an arbitrary
  * environment-variable name is configured and where from, which is
  * reconnaissance no anonymous caller should have. `trustedHosts` is a
- * DNS-rebinding fence, explicitly not authentication, so the whole
- * configuration plane stays loopback-same-origin until a real authentication
- * layer exists. `llm.discoverModels` belongs to that plane on both counts: it
- * carries a draft credential, and it makes the HOST issue a GET to a URL the
- * caller chose and reports back the status or the parsed body — an anonymous
- * LAN caller would have a probe for whatever the host can reach and the
- * browser cannot.
+ * DNS-rebinding fence, explicitly not authentication, so secret-store and
+ * local-desktop actions stay loopback-same-origin until a real authentication
+ * layer exists. `llm.discoverModels` belongs here on both counts: it carries a
+ * draft credential, and it makes the HOST issue a GET to a URL the caller chose
+ * and reports back the status or the parsed body — an anonymous LAN caller
+ * would have a probe for whatever the host can reach and the browser cannot.
  *
  * The model catalog (`llm.providers`, `llm.models`) is deliberately NOT here:
  * it carries provider ids, display names, and model lists — no endpoints,
@@ -107,11 +104,6 @@ const PRIVILEGED_METHODS = new Set([
   'agentPreset.remove',
   'host.pickDirectory',
   'host.openPath',
-  'settings.describe',
-  'settings.openDocument',
-  'settings.update',
-  'settings.replace',
-  'settings.mutate',
   'credentials.describe',
   'credentials.set',
   'credentials.unset',

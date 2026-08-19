@@ -35,7 +35,7 @@ export class WelcomeNoticeStore {
 
   /**
    * @param api - settings wire face used for durable reads and writes.
-   * @param persistence - remote browsers use memory because settings is loopback-only.
+   * @param persistence - storage target for acknowledgement reads and writes.
    */
   constructor(
     private readonly api: Pick<IApiClient, 'settings'>,

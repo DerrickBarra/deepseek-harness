@@ -402,8 +402,9 @@ describe('SettingsScopeBinder.bind', () => {
     expect(describeCall).toHaveBeenCalledTimes(3)
   })
 
-  it('binds a remote browser in memory mode without starting a settings read', async () => {
+  it('binds a remote browser to Host settings over the trusted connection', async () => {
     const describeCall = vi.fn()
+      .mockResolvedValueOnce(described({ preference: 'dark' }, 1))
     const ctx = new Context()
     ctx.provide('connection', {
       api: { settings: { describe: describeCall } },
@@ -419,8 +420,10 @@ describe('SettingsScopeBinder.bind', () => {
       },
     })
     await fiber.await()
-    expect(scope.getSnapshot()).toMatchObject({ status: 'unavailable', mode: 'memory', writable: false })
+    await vi.waitFor(() => { expect(describeCall).toHaveBeenCalledOnce() })
+    expect(scope.getSnapshot()).toMatchObject({
+      status: 'ready', mode: 'host', writable: true, value: { preference: 'dark' },
+    })
     await fiber.dispose()
-    expect(describeCall).not.toHaveBeenCalled()
   })
 })
