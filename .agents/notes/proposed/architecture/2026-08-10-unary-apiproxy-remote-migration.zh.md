@@ -78,7 +78,7 @@ Resolver 拥有的 `session-not-found` 和 `agent-busy` 错误保持稳定，因
 
 ## 特权调用权限
 
-Connection 必须在选择 Typert interceptor 或 API Proxy 回退路径之前检查调用方是否有权访问特权端点。该检查必须同时识别旧式点分名称和 Remote 斜杠端点，并保持以下已迁移操作仅限环回地址：
+Connection 必须在选择 Typert interceptor 或 API Proxy 回退路径之前检查调用方是否有权访问特权端点。该检查必须同时识别旧式点分名称和 Remote 斜杠端点，并保持以下已迁移操作使用共享 trusted-host 策略：
 
 - `agentPresets/readDocument`、`agentPresets/copy` 和 `agentPresets/remove`；
 - `credentials/describe`、`credentials/set` 和 `credentials/unset`。

@@ -55,8 +55,9 @@ export interface SettingsApi {
    * Describe every registered namespace: redacted layered values plus the
    * serialized schema a client renders its form from. `hasDocument` reports
    * whether a file-backed provider owns a local document without exposing its
-   * Host path. This method is loopback-only; `writable: false` (read-only
-   * provider) tells the client to disable every write control.
+   * Host path. The `/api` trust fence decides which browsers may call this
+   * method; `writable: false` (read-only provider) tells the client to disable
+   * every write control.
    */
   describe(request: RpcRequest<{}>): Promise<RpcResponse<{
     writable: boolean

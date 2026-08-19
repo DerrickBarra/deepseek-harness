@@ -10,7 +10,7 @@ Status: implemented
 
 这个面能用，但能触达它的调用方、以及它们所拥有的权限，都比设计声称的更多。
 
-`trustedHosts` 只拦住了写入，因此一个已声明的 LAN 客户端可以调用 `settings.describe`——拿到每个已暴露 namespace 的配置——以及 `credentials.describe`，后者会报告任意一个环境变量名是否已配置、又从何处解析。那道 fence 是 DNS 重绑定防御，它自己也是这么写的；把它当作读取的授权边界，是一次范畴错误。另一件事是：代理服务于每一个已注册的 namespace。settings seam 是刻意做成通用的，因此第一个为自身配置调用 `settings.register()` 的插件，就会悄无声息地变成可远程读写，而完全不必经过任何针对 Web 表层的评审。
+配置面最初信任已声明 LAN 客户端的读取，同时限制写入，因此该客户端可以调用 `settings.describe`——拿到每个已暴露 namespace 的配置——以及 `credentials.describe`，后者会报告任意一个环境变量名是否已配置、又从何处解析。把读取访问当成比写入访问更低特权，是一次范畴错误。另一件事是：代理服务于每一个已注册的 namespace。settings seam 是刻意做成通用的，因此第一个为自身配置调用 `settings.register()` 的插件，就会悄无声息地加入 Web 配置面，而完全不必经过任何针对 Web 表层的评审。
 
 编辑器比「可触达」更糟——它是破坏性的。它读到的是脱敏后的 descriptor，后者按构造省略了 `role('secret')` 字段。清空其中一个字段，会用这份脱敏副本重建整个用户分节并发出 `settings.replace`，于是一个协议从未回传过的已存字面 `apiKey` 被顺带删除。这一点被直接复现：输入 `{baseURL, reasoning}`，输出时 `apiKey` 消失。删除整行走的是同一条路径。而且没有任何东西携带版本，因此两个标签页编辑同一个 namespace 会静默互相覆盖；seam 的逐 namespace 写队列只排定写入次序，分辨不出一个持有新鲜快照的写方与一个重放陈旧快照的写方。
 
@@ -18,7 +18,7 @@ Status: implemented
 
 ## 决策
 
-**读取配置与写入配置同样属于特权操作。**`settings.describe` 与 `credentials.describe` 加入仅限回环的集合，因此在真正的认证层出现之前，整个配置面都保持同源。模型目录（`llm.providers`、`llm.models`）刻意不在其中：它携带的是提供方 id、显示名与模型列表——没有端点、没有密钥状态——而 LAN 客户端的模型选择器正需要它。这条边界由一台真实 HTTP 服务器来断言，而不是手工拼装的请求，因为真正决定它的，是浏览器实际发出的那个 `Host` 头。
+**读取配置与写入配置同样属于特权操作。**`settings.describe` 与 `credentials.describe` 使用和配置写入相同的 `/api` trusted-host 栅栏，因此 loopback 与已声明的 `trustedHosts` 拥有同一组获准访问能力，未声明的非 loopback authority 会被拒绝。模型目录（`llm.providers`、`llm.models`）携带提供方 id、显示名与模型列表——没有端点、没有密钥状态——并继续属于这项共享 DSH API 可达性决策。这条边界由一台真实 HTTP 服务器来断言，而不是手工拼装的请求，因为真正决定它的，是浏览器实际发出的那个 `Host` 头。
 
 **这个面恰好服务于已注册模型提供方所指向的那些 namespace。**`ctx.llm.listConfigurableProviders()` 就是允许列表，于是产品边界是被执行的，而不是从今天的插件集合里推断出来的；将来的 namespace 只有加入该目录才会变得可在 Web 上配置。未注册的 namespace 与未暴露的 namespace 得到完全相同的答复（`settings-not-exposed`），因此探测无法枚举注册表。
 
@@ -38,4 +38,4 @@ Status: implemented
 
 ## 影响
 
-`trustedHosts` 部署下的 LAN 客户端已经完全无法渲染设置页；配置表层就是回环。注册了 settings namespace 的插件，在它同时注册可配置提供方之前不会变得可在 Web 上配置——这是刻意的，也正是 `settings-not-exposed` 要在消息里点明这条边界的原因。`SettingsDescriptor` 新增了必填的 `revision`，因此以编程方式构造 descriptor 形状值的地方都必须提供它；`settings/document-updated` 是一个新事件，提供方侧的任何 listener 现在都可以观察它。忽略 `expectedRevision` 的客户端，其后写胜出的语义完全不变。延后事项：fail-closed 的协议 describe（连同它所承载的 `headers` 与信封净化工作），以及一套不含可执行代码的浏览器 schema 协议。
+位于 loopback 与 `trustedHosts` 之外的浏览器无法渲染 Host-backed 设置页；已声明的 trusted host 可以渲染与 loopback 相同的配置表层，而这种可达性仍不同于认证。注册了 settings namespace 的插件，在它同时注册可配置提供方之前不会变得可在 Web 上配置——这是刻意的，也正是 `settings-not-exposed` 要在消息里点明这条边界的原因。`SettingsDescriptor` 新增了必填的 `revision`，因此以编程方式构造 descriptor 形状值的地方都必须提供它；`settings/document-updated` 是一个新事件，提供方侧的任何 listener 现在都可以观察它。忽略 `expectedRevision` 的客户端，其后写胜出的语义完全不变。延后事项：fail-closed 的协议 describe（连同它所承载的 `headers` 与信封净化工作），以及一套不含可执行代码的浏览器 schema 协议。

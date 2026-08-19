@@ -12,7 +12,7 @@ Moving a method mechanically is not sufficient. Agent-bound API Proxy methods ca
 
 The API Proxy also contains BFF operations whose contract is not a business method: Session lifecycle and transcript assembly, model-selection state, live-only input control, configuration filtering, skill presentation, Host composition facts, and native desktop operations. Stateful interactions and streams have different lifecycles again. Treating all unary syntax as evidence that a method is simple would move product policy into arbitrary Service packages or force new packages that have no independent business owner.
 
-Finally, Connection currently applies its loopback-only privileged-method list inside the API Proxy fallback. A Typert interceptor claims its endpoint before that fallback, so migrating credential or preset authoring calls without moving the privilege check would grant trusted-LAN callers operations that are currently loopback-only.
+Finally, Connection currently applies the legacy API Proxy trust policy inside the API Proxy fallback. A Typert interceptor claims its endpoint before that fallback, so migrating credential or preset authoring calls without preserving the shared `/api` trusted-host fence would change which callers reach those operations.
 
 ## Proposal
 
@@ -78,7 +78,7 @@ Resolver-owned `session-not-found` and `agent-busy` errors remain stable because
 
 ## Privileged authority
 
-Connection must enforce privileged endpoint authority before choosing the Typert interceptor or API Proxy fallback. The check must recognize both legacy dotted names and Remote slash endpoints and keep these migrated operations loopback-only:
+Connection must enforce privileged endpoint authority before choosing the Typert interceptor or API Proxy fallback. The check must recognize both legacy dotted names and Remote slash endpoints and keep these migrated operations on the shared trusted-host policy:
 
 - `agentPresets/readDocument`, `agentPresets/copy`, and `agentPresets/remove`;
 - `credentials/describe`, `credentials/set`, and `credentials/unset`.
