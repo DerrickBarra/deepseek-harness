@@ -1,11 +1,15 @@
 /** Models section registration: slot declaration injection, the locale-following label thunk, and HMR recovery. */
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
+import type { RpcResponse } from '@deepseek-ai/dsh-api-remotes/client'
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { TestRemote, usePinnedBrowserLanguages } from '@deepseek-ai/dsh-client-test-runtime'
 import { apply, inject, refreshIfLoaded } from '@deepseek-ai/dsh-client-ui-settings-models/client'
+import {
+  WELCOME_NOTICE_ACK_FIELD, WELCOME_NOTICE_SETTINGS_NAMESPACE, WELCOME_NOTICE_VERSION,
+} from '../src/onboarding-copy.ts'
 import { ModelsSection } from '../src/client/ModelsSection.tsx'
 import { DeepSeekOnboardingDialog } from '../src/client/DeepSeekOnboardingDialog.tsx'
 import { WelcomeNotice } from '../src/client/WelcomeNotice.tsx'
@@ -14,7 +18,38 @@ import { WelcomeNotice } from '../src/client/WelcomeNotice.tsx'
 // the shipped Chinese copy, so they state the browser they assume.
 usePinnedBrowserLanguages('zh-CN')
 
-async function bench(isLoopback = true) {
+let rpc = 0
+function ok<T>(value: T): RpcResponse<T> {
+  return { rpcId: `settings-models-apply-${rpc++}` as never, result: { ok: true, value } }
+}
+
+function welcomeNamespace(version?: string) {
+  return {
+    ns: WELCOME_NOTICE_SETTINGS_NAMESPACE,
+    schema: {},
+    value: version === undefined ? {} : { [WELCOME_NOTICE_ACK_FIELD]: version },
+    base: {},
+    user: {},
+    applies: 'live' as const,
+    secrets: [],
+    revision: 0,
+  }
+}
+
+function settingsApi(version?: string) {
+  return {
+    settings: {
+      describe: vi.fn(() => Promise.resolve(ok({
+        writable: true,
+        hasDocument: true,
+        namespaces: [welcomeNamespace(version)],
+      }))),
+      mutate: vi.fn(() => Promise.resolve(ok(welcomeNamespace(WELCOME_NOTICE_VERSION)))),
+    },
+  }
+}
+
+async function bench(isLoopback = true, api: unknown = {}) {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
   const locale = new LocaleRuntime(ctx)
@@ -24,7 +59,7 @@ async function bench(isLoopback = true) {
   new TestRemote(ctx)
   // The apply path only captures the wire face; no call leaves this fake
   // until a section actually loads.
-  ctx.provide('connection', { api: {}, isLoopback } as never)
+  ctx.provide('connection', { api, isLoopback } as never)
   return { ctx, slots: ctx.get('slots') as SlotRegistry, locale }
 }
 
@@ -143,8 +178,9 @@ describe('ui-settings-models apply', () => {
     expect(() => b.locale.register('settings.models', 'en', {})).not.toThrow()
   })
 
-  it('keeps remote-browser acknowledgement in process memory', async () => {
-    const b = await bench(false)
+  it('loads remote-browser acknowledgement over a trusted settings API', async () => {
+    const api = settingsApi(WELCOME_NOTICE_VERSION)
+    const b = await bench(false, api)
     declare(b.slots)
     await b.ctx.plugin({ inject: [...inject], apply }).await()
     const entry = b.slots.entries('settings.onboarding')
@@ -155,7 +191,24 @@ describe('ui-settings-models apply', () => {
 
     await injected.controller.load()
     expect(injected.controller.store.getSnapshot()).toEqual({
-      status: 'ready', acknowledged: false, error: null,
+      status: 'ready', acknowledged: true, error: null,
+    })
+    expect(api.settings.describe).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a remote browser without settings authority from acknowledging durably', async () => {
+    const b = await bench(false)
+    declare(b.slots)
+    await b.ctx.plugin({ inject: [...inject], apply }).await()
+    const entry = b.slots.entries('settings.onboarding')
+      .find(candidate => candidate.options.id === 'welcome-notice')!
+    const injected = (
+      entry.inject as unknown as () => import('../src/client/WelcomeNotice.tsx').WelcomeNoticeInjected
+    )()
+
+    await injected.controller.load()
+    expect(injected.controller.store.getSnapshot()).toMatchObject({
+      status: 'error', acknowledged: false,
     })
   })
 })
