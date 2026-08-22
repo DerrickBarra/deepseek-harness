@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-21
 **Status:** In Progress
-**Last Updated:** 2026-08-21 21:03 EDT
+**Last Updated:** 2026-08-21 21:06 EDT
 **Blocked Reason:** None
 **Agent:** `chip`
 
@@ -75,6 +75,6 @@ The likely seam is the preview iframe behavior: if it uses `srcdoc`, relative li
 
 **Reference Check:** Read `README.md` before repo edits; used the workspace viewer panel, gateway, and focused tests listed above.
 
-**Commits:** `41de3bc9c3` (`Fix workspace HTML preview local links`), pending push at this checkpoint.
+**Commits:** `41de3bc9c3` (`Fix workspace HTML preview local links`) plus `17113d16fb` (`Record workspace HTML preview fix plan`), pushed to `derrick/dsh-chip-workspace-file-viewer`.
 
 **Lessons Learned:** `iframe srcDoc` has no workspace-aware file base, so local navigation needs an explicit click bridge back to the viewer's Remote read path.
