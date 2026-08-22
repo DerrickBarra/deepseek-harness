@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-21
 **Status:** In Progress
-**Last Updated:** 2026-08-21 21:06 EDT
+**Last Updated:** 2026-08-21 21:07 EDT
 **Blocked Reason:** None
 **Agent:** `chip`
 
@@ -49,6 +49,7 @@ The likely seam is the preview iframe behavior: if it uses `srcdoc`, relative li
 
 **Files Created/Deleted/Modified:**
 - `plugins/openclaw-workspace-file-viewer/src/client/WorkspaceFileViewerPanel.tsx`
+- `plugins/openclaw-workspace-file-viewer/src/client/WorkspaceFileViewerPanel.module.css`
 - `plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx`
 - `plugins/openclaw-workspace-file-viewer/lib/client.js`
 - Existing branch work in the same plugin remained in place and was rebuilt: `src/client/index.ts`, `src/index.ts`, `src/types.ts`, `src/client/locales.ts`, `src/client/WorkspaceFileViewerPanel.module.css`, `tests/browser-plugin.client.spec.ts`, `tests/workspace-file-viewer.spec.ts`, `lib/types/client/index.js`.
@@ -57,11 +58,14 @@ The likely seam is the preview iframe behavior: if it uses `srcdoc`, relative li
 
 **Results:** The HTML preview now intercepts iframe anchor clicks after `srcDoc` load. Relative `.html` links are resolved against the currently previewed file path, then loaded through the existing workspace `read(rootId, path)` Remote and optional parent directory listing refresh. Hash-only links remain inside the preview. External, scheme-based, root-absolute, backslash, malformed percent-encoded, non-HTML, and root-escaping relative links are not navigated by the iframe. Filesystem access remains on the existing server allowlist/path normalization path.
 
+Parent review found the first implementation commit preserved only `min-height` on `.htmlPreview`; Chip restored the previously approved `height: 95%` rule in source and regenerated `lib/client.js` so the shipped plugin keeps the sizing Derrick already validated.
+
 **Validation:**
 - `pnpm exec vitest run plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx plugins/openclaw-workspace-file-viewer/tests/workspace-file-viewer.spec.ts` — passed, 20 tests.
 - `pnpm exec tsc -b plugins/openclaw-workspace-file-viewer/tsconfig.json plugins/openclaw-workspace-file-viewer/tsconfig.client.json` — passed.
 - `pnpm --filter @openclaw/dsh-workspace-file-viewer run bundle` — passed; refreshed bundled runtime artifacts.
 - `git diff --check` — passed.
+- Parent reran the same focused tests, typecheck, bundle, and `git diff --check` after restoring `height: 95%`; all passed. The bundle/source both contain the 95% height rule.
 
 **Limitations:** Retest in the real web UI should click a sibling link such as `<a href="next.html">` inside an HTML preview. The implementation intentionally does not open external links from the sandboxed preview.
 
@@ -75,6 +79,6 @@ The likely seam is the preview iframe behavior: if it uses `srcdoc`, relative li
 
 **Reference Check:** Read `README.md` before repo edits; used the workspace viewer panel, gateway, and focused tests listed above.
 
-**Commits:** `41de3bc9c3` (`Fix workspace HTML preview local links`) plus `17113d16fb` (`Record workspace HTML preview fix plan`), pushed to `derrick/dsh-chip-workspace-file-viewer`.
+**Commits:** `41de3bc9c3` (`Fix workspace HTML preview local links`), `17113d16fb` (`Record workspace HTML preview fix plan`), and `0f0f6d33d8` (`Restore workspace HTML preview height`), pushed to `derrick/dsh-chip-workspace-file-viewer`.
 
 **Lessons Learned:** `iframe srcDoc` has no workspace-aware file base, so local navigation needs an explicit click bridge back to the viewer's Remote read path.
