@@ -79,6 +79,6 @@ Parent review found the first implementation commit preserved only `min-height` 
 
 **Reference Check:** Read `README.md` before repo edits; used the workspace viewer panel, gateway, and focused tests listed above.
 
-**Commits:** `41de3bc9c3` (`Fix workspace HTML preview local links`), `17113d16fb` (`Record workspace HTML preview fix plan`), and `0f0f6d33d8` (`Restore workspace HTML preview height`), pushed to `derrick/dsh-chip-workspace-file-viewer`.
+**Commits:** `41de3bc9c3` (`Fix workspace HTML preview local links`), `17113d16fb` (`Record workspace HTML preview fix plan`), and `20b823508b` (`Restore workspace HTML preview height`), pushed to `derrick/dsh-chip-workspace-file-viewer`.
 
 **Lessons Learned:** `iframe srcDoc` has no workspace-aware file base, so local navigation needs an explicit click bridge back to the viewer's Remote read path.
