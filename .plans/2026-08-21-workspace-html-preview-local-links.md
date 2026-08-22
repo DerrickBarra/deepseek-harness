@@ -1,8 +1,8 @@
 # Workspace HTML Preview Local Links
 
 **Date:** 2026-08-21
-**Status:** In Progress
-**Last Updated:** 2026-08-21 21:07 EDT
+**Status:** Complete
+**Last Updated:** 2026-08-21 22:48 EDT
 **Blocked Reason:** None
 **Agent:** `chip`
 
@@ -69,11 +69,13 @@ Parent review found the first implementation commit preserved only `min-height` 
 
 **Limitations:** Retest in the real web UI should click a sibling link such as `<a href="next.html">` inside an HTML preview. The implementation intentionally does not open external links from the sandboxed preview.
 
+**Heartbeat Truth Maintenance:** Bead `oc-kpv` is closed. The plan body already recorded implementation, validation, and pushed commits, so the stale header status was corrected from `In Progress` to `Complete`. Repo dirt observed during the heartbeat is untracked and not part of this completed task record: generated-looking `plugins/openclaw-workspace-file-viewer/src/types.{d.ts,d.ts.map,js,js.map}` plus ambiguous untracked `plugins/openclaw-workspace-file-viewer/tests/panel-style.spec.ts`. These files were left untouched for explicit cleanup/triage in a future approved task.
+
 ---
 
 ## Final Results
 
-**Status:** Implemented
+**Status:** ✅ Complete
 
 **What We Built:** Local relative `.html` links inside the workspace file viewer HTML preview navigate to the target file in the overlay without leaving the iframe sandbox or bypassing the configured workspace root allowlist.
 
