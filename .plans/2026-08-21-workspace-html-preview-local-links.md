@@ -75,6 +75,6 @@ The likely seam is the preview iframe behavior: if it uses `srcdoc`, relative li
 
 **Reference Check:** Read `README.md` before repo edits; used the workspace viewer panel, gateway, and focused tests listed above.
 
-**Commits:** `dbac601eae` (`Fix workspace HTML preview local links`), pending push at this checkpoint.
+**Commits:** `41de3bc9c3` (`Fix workspace HTML preview local links`), pending push at this checkpoint.
 
 **Lessons Learned:** `iframe srcDoc` has no workspace-aware file base, so local navigation needs an explicit click bridge back to the viewer's Remote read path.
