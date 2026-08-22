@@ -1,9 +1,9 @@
 # Workspace Viewer File Actions And Editor
 
 **Date:** 2026-08-17
-**Status:** In Progress
-**Last Updated:** 2026-08-17 21:11 EDT
-**Blocked Reason:** QA rerun still fails Add to chat on the served DSH surface; `oc-qff` remains `in_progress` and audit bead `oc-0p2` must stay open.
+**Status:** Complete
+**Last Updated:** 2026-08-17 22:03 EDT
+**Blocked Reason:** None; independent audit `oc-0p2` passed and the feature is ready for Derrick's phone test.
 **Agent:** `chip`
 
 ---
@@ -112,7 +112,7 @@ Parent checkpoint:
 - `/tmp/dsh-workspace-viewer-qa/events.json`
 - `/tmp/dsh-workspace-viewer-qa/results.json`
 
-**Status:** ❌ Failed
+**Status:** ✅ Complete
 
 **Results:** QA used Playwright against `https://derrick-surface-pro-8.tail613fcb.ts.net:8443/`; the primary URL returned HTTP 200, so the local fallback `http://127.0.0.1:3081/` was not needed.
 
@@ -209,6 +209,65 @@ Blocking rerun failure:
 - Add to chat still failed for both file and folder rows on the served DSH surface after remediation commit `98035a8385`. Right-clicking `qa-workspace-viewer-rerun.md` and `plugins`, then choosing `Add to chat`, left the visible chat draft empty (`draft=""`). The expected inserted paths were `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-rerun.md` and `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins`.
 
 Bead `oc-qff` remains `in_progress`; audit bead `oc-0p2` is untouched and should not proceed to closure.
+
+#### QA Rerun After `oc-5wu`
+
+**Status:** ✅ Passed
+
+**Evidence:** `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/`
+
+The visible-composer remediation bead `oc-5wu` completed after the failed `98035a8385` QA rerun. It pushed commit `d6ef09844c`, refreshed the live-linked deployment copy used by the served orchestrator profile, restarted `dsh-chip.service`, verified the phone-test URL returned HTTP `200`, and captured a served Playwright smoke pass at `/tmp/dsh-workspace-viewer-visible-composer-smoke/result.json` with `draft="/home/derrick/.openclaw/workspace/.openclaw"`.
+
+Files captured:
+
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/01-panel-open-repo-root.png`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/02-add-to-chat-file.png`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/03-add-to-chat-folder.png`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/04-collapsed-selected-file.png`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/05-expanded-selected-file.png`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/06-markdown-saved.png`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/07-markdown-cancel.png`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/08-html-preview.png`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/09-html-edit-cancel.png`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/events.json`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/results.json`
+
+Commands/run method:
+
+```sh
+sed -n '1,220p' README.md
+sed -n '1,260p' .plans/2026-08-17-workspace-viewer-file-actions-editor.md
+bd show oc-qff --json
+git log --oneline -n 8 --decorate
+curl -k -I --max-time 10 https://derrick-surface-pro-8.tail613fcb.ts.net:8443/
+node - <<'NODE'
+# Playwright script loaded /home/derrick/.npm-global/lib/node_modules/playwright, dismissed the testing notice,
+# opened Workspace files, selected OpenClaw workspace, navigated to projects/deepseek-harness, used right-click
+# Add to chat on qa-workspace-viewer-visible-composer.md and plugins, then exercised collapse/expand, Markdown
+# save/cancel, and HTML preview/edit/cancel. It wrote screenshots plus events.json/results.json under
+# /tmp/dsh-workspace-viewer-qa-visible-composer-rerun/.
+NODE
+```
+
+Temporary files used under the allowlisted repo root:
+
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-visible-composer.md`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-visible-composer.html`
+
+Both temporary files were removed after the rerun.
+
+Passing rerun checks:
+
+- Workspace viewer loaded on the served app with the `Workspace files` panel visible at `OpenClaw workspace/projects/deepseek-harness`.
+- Right-click Add to chat on `qa-workspace-viewer-visible-composer.md` inserted `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-visible-composer.md` into the visible composer draft.
+- Right-click Add to chat on `plugins` inserted `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins` into the visible composer draft. The final draft contained the prior file path followed by the folder path, which satisfies selected path insertion.
+- Explorer collapse and expand preserved the selected Markdown file preview.
+- Markdown view/edit mode worked; Save wrote the edited content to the host file under the allowlisted workspace root.
+- Cancel from Markdown edit mode exited without writing the changed draft.
+- HTML view mode rendered the file in an iframe preview, edit mode exposed the HTML source text, and Cancel did not write the changed HTML draft.
+- No in-scope viewer-path console, network, or runtime errors were observed. The only recorded browser errors were the known `/api/credentials.describe` and `/api/settings.describe` HTTP `403` noise with matching generic console resource errors.
+
+Bead `oc-qff` is closed. Audit bead `oc-0p2` remains untouched and is ready for independent audit.
 
 ---
 
@@ -339,24 +398,60 @@ Commit: `fix(workspace-file-viewer): target visible composer draft`
 **Prompt:** Claim the assigned bead on start. Read `/home/derrick/.openclaw/workspace/projects/deepseek-harness/README.md` first. Independently check the feature against the plan, bead state, diff, tests, QA evidence, shipped artifacts, and live DSH behavior. Confirm the host-side save path preserves root allowlisting and write safety. Close the final bead only if the feature is actually ready for Derrick to test.
 
 **Folders Created/Deleted/Modified:**
-- `Pending`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/` (inspected existing served QA evidence)
 
 **Files Created/Deleted/Modified:**
-- `Pending`
+- `/home/derrick/.openclaw/workspace/projects/deepseek-harness/.plans/2026-08-17-workspace-viewer-file-actions-editor.md`
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
-**Results:** Pending.
+**Results:** Independent audit passed.
+
+Bead state:
+- `oc-qff` is closed with close reason `Served DSH workspace viewer QA matrix passed after d6ef09844c`; its evidence directory exists at `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/`.
+- `oc-0p2` was claimed with `bd update oc-0p2 --status in_progress --json` before audit work.
+
+QA evidence inspected:
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/results.json`
+- `/tmp/dsh-workspace-viewer-qa-visible-composer-rerun/events.json`
+- Screenshots `02-add-to-chat-file.png`, `03-add-to-chat-folder.png`, `06-markdown-saved.png`, and `08-html-preview.png`
+
+Served QA result summary:
+- Workspace viewer loaded at `OpenClaw workspace/projects/deepseek-harness`.
+- File Add to chat inserted `/home/derrick/.openclaw/workspace/projects/deepseek-harness/qa-workspace-viewer-visible-composer.md` into the visible composer draft.
+- Folder Add to chat inserted `/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins` into the visible composer draft.
+- Explorer collapse/expand preserved the selected Markdown preview.
+- Text view/edit controls, Save, Cancel, HTML preview, and HTML source edit/cancel passed.
+- Only known served-app `/api/credentials.describe` and `/api/settings.describe` HTTP `403` noise was recorded.
+
+Implementation review:
+- `plugins/openclaw-workspace-file-viewer/src/client/WorkspaceFileViewerPanel.tsx` implements row context menu Add to chat, touch long-press menu, collapsible explorer, edit/view controls, Save/Cancel, Markdown/text rendering, and sandboxed HTML preview.
+- `plugins/openclaw-workspace-file-viewer/src/client/index.ts` inserts into the visible composer first, falls back to session/workspace draft insertion, and handles no-active-session routing.
+- `plugins/openclaw-workspace-file-viewer/src/index.ts` keeps host writes behind configured root ids, canonical `realpath` checks, traversal rejection, regular-file checks, supported text extensions, `maxFileBytes`, and write access checks before UTF-8 `writeFile`.
+- Built plugin artifacts contain the same save RPC and visible-composer Add to chat implementation. The live-linked copy under `/home/derrick/.openclaw/workspace/projects/dsh-orchestration-agent/plugins/openclaw-workspace-file-viewer/` differs only in generated TypeScript build info and local dependency layout.
+
+Audit validation run:
+- `curl -k -I --max-time 10 https://derrick-surface-pro-8.tail613fcb.ts.net:8443/` returned HTTP `200`.
+- `pnpm exec tsc -b plugins/openclaw-workspace-file-viewer/tsconfig.json plugins/openclaw-workspace-file-viewer/tsconfig.client.json` passed.
+- `pnpm exec vitest run plugins/openclaw-workspace-file-viewer/tests/workspace-file-viewer.spec.ts plugins/openclaw-workspace-file-viewer/tests/browser-plugin.client.spec.ts plugins/openclaw-workspace-file-viewer/tests/panel.client.spec.tsx plugins/openclaw-workspace-file-viewer/tests/invariant.spec.ts` passed: `4` files, `18` tests.
+- `pnpm exec oxlint plugins/openclaw-workspace-file-viewer/src plugins/openclaw-workspace-file-viewer/tests` passed.
+- `pnpm --filter @openclaw/dsh-workspace-file-viewer run bundle` passed; known optional linux-arm64 and tsdown dependency notices were observed.
+- `git diff --check` passed.
+
+Repo state:
+- Only this plan file is dirty for audit handoff.
+- The audit-generated `lib/client.js` bundle churn was removed before closure.
+- No in-scope gap or follow-up bead is needed.
 
 ---
 
 ## Final Results
 
-**Status:** ✅ Visible Composer Remediation Ready For QA Rerun
+**Status:** ✅ Ready For Derrick Phone Test
 
-**What We Built:** Implementation is present and the served visible-composer Add to chat smoke now passes after the `oc-5wu` remediation. The feature still needs the planned QA rerun (`oc-qff`) and independent audit (`oc-0p2`).
+**What We Built:** Implementation is present, the served visible-composer Add to chat smoke and full served workspace viewer QA matrix pass after the `oc-5wu` remediation, and independent audit (`oc-0p2`) passed.
 
-**Reference Check:** `oc-5wu` has served browser evidence for visible draft insertion. `oc-qff` remains `in_progress` for QA rerun; audit remains pending.
+**Reference Check:** `oc-qff` has served browser evidence for file/folder Add to chat, collapse/expand, Markdown save/cancel, and HTML preview/edit/cancel. `oc-0p2` independently verified bead state, source behavior, write safety, shipped artifacts, focused validation, repo dirt, and live URL reachability.
 
 **Commits:**
 - `107d80b73c` — `feat(workspace-file-viewer): add file actions and editor`
@@ -365,10 +460,10 @@ Commit: `fix(workspace-file-viewer): target visible composer draft`
 - `5bfa496c03` — `docs(plan): add workspace viewer add-to-chat remediation`
 - `98035a8385` — `fix(workspace-file-viewer): create chat session before adding paths`
 - `7836b3274a` — `docs(plan): record workspace viewer QA rerun failure`
-- `fix(workspace-file-viewer): target visible composer draft`
+- `d6ef09844c` — `fix(workspace-file-viewer): target visible composer draft`
 
 **Lessons Learned:** Parent review must verify subagent commit/bead claims directly; the returned handoff was not consistent with the checkout state.
 
 ---
 
-*In progress on 2026-08-17*
+*Completed on 2026-08-17*

@@ -4088,6 +4088,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"content": string().readonly(),
 			"size": number().readonly()
 		});
+		const _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_resolveOpenPath_parameter_0$schema = string();
+		const _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_resolveOpenPath_result$schema = object({
+			"root": object({
+				"id": string().readonly(),
+				"path": string().readonly(),
+				"label": string().readonly()
+			}).readonly(),
+			"path": string().readonly(),
+			"kind": union([literal("directory"), literal("file")]).readonly(),
+			"displayPath": string().readonly(),
+			"line": number().readonly().optional()
+		});
 		const _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_roots_result$schema = array(object({
 			"id": string().readonly(),
 			"path": string().readonly(),
@@ -4147,7 +4159,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 119,
+						"line": 206,
 						"column": 9
 					}
 				},
@@ -4183,7 +4195,34 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 162,
+						"line": 249,
+						"column": 9
+					}
+				},
+				{
+					id: "@openclaw/dsh-workspace-file-viewer#workspaceFileViewer/resolveOpenPath",
+					service: "workspaceFileViewer",
+					namespace: "workspaceFileViewer",
+					method: "resolveOpenPath",
+					invocation: { kind: "direct" },
+					parameters: [{
+						name: "rawTarget",
+						wire: "rawTarget",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@openclaw/dsh-workspace-file-viewer#workspaceFileViewer/resolveOpenPath:rawTarget",
+							schema: _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_resolveOpenPath_parameter_0$schema
+						}
+					}],
+					result: {
+						mode: "strict",
+						typeSymbol: "@openclaw/dsh-workspace-file-viewer/types#WorkspaceFileViewerOpenTarget",
+						schema: _openclaw_dsh_workspace_file_viewer_workspaceFileViewer_resolveOpenPath_result$schema
+					},
+					sourceLocation: {
+						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
+						"line": 167,
 						"column": 9
 					}
 				},
@@ -4201,7 +4240,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 108,
+						"line": 157,
 						"column": 9
 					}
 				},
@@ -4250,7 +4289,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 193,
+						"line": 280,
 						"column": 9
 					}
 				}
@@ -4273,7 +4312,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		//#region \0dsh-css:/home/derrick/.openclaw/workspace/projects/deepseek-harness/plugins/openclaw-workspace-file-viewer/src/client/WorkspaceFileViewerPanel.module.css.mjs
-		const css = ".ZprdQa_actionButton{width:100%;min-width:0;height:32px;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:8px;flex:none;justify-content:center;align-items:center;gap:6px;padding:0 10px;display:inline-flex}.ZprdQa_actionButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_actionButtonRail{border-radius:50%;width:36px;height:36px;padding:0}.ZprdQa_actionLabel{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.ZprdQa_overlay{z-index:20;pointer-events:none;justify-content:flex-end;display:flex;position:fixed;inset:0}.ZprdQa_backdrop{pointer-events:auto;background:#0000002e;position:absolute;inset:0}.ZprdQa_panel{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);width:min(920px,100vw - 48px);height:calc(100vh - 48px);color:var(--dsw-alias-label-primary);box-shadow:var(--dsw-alias-shadow-l3);pointer-events:auto;border-radius:8px;grid-template-rows:auto minmax(0,1fr);margin:24px;display:grid;position:relative;overflow:hidden}.ZprdQa_header{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:center;gap:8px;min-width:0;padding:12px 14px;display:flex}.ZprdQa_title{flex:1;min-width:0;margin:0;font-size:14px;font-weight:600;line-height:20px}.ZprdQa_iconButton{width:30px;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:0;border-radius:50%;flex:none;justify-content:center;align-items:center;display:inline-flex}.ZprdQa_iconButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_body{grid-template-columns:minmax(220px,320px) minmax(0,1fr);min-height:0;display:grid}.ZprdQa_bodyCollapsed{grid-template-columns:minmax(0,1fr)}.ZprdQa_browser{border-right:1px solid var(--dsw-alias-border-l2);grid-template-rows:auto auto minmax(0,1fr);min-width:0;min-height:0;display:grid}.ZprdQa_rootSelect{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:0;height:32px;color:var(--dsw-alias-label-primary);border-radius:8px;margin:12px}.ZprdQa_breadcrumbs{align-items:center;gap:4px;min-width:0;padding:0 12px 10px;display:flex;overflow:auto hidden}.ZprdQa_crumb{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:0;border-radius:6px;flex:none;padding:4px 6px;font-size:12px}.ZprdQa_crumb:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_list{min-height:0;padding:0 8px 10px;overflow:auto}.ZprdQa_row{width:100%;min-height:30px;color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;background:0 0;border:0;border-radius:6px;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 8px;display:grid}.ZprdQa_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.ZprdQa_row[aria-disabled=true]{color:var(--dsw-alias-label-tertiary)}.ZprdQa_name{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.ZprdQa_meta{color:var(--dsw-alias-label-tertiary);font-size:11px}.ZprdQa_viewer{min-width:0;min-height:0;padding:18px 22px;overflow:auto}.ZprdQa_viewerHeader{align-items:center;gap:10px;min-width:0;margin:0 0 14px;display:flex}.ZprdQa_fileTitle{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;margin:0;font-size:16px;font-weight:600;line-height:22px;overflow:hidden}.ZprdQa_viewerActions{flex:none;align-items:center;gap:6px;display:inline-flex}.ZprdQa_textButton{min-width:0;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:6px;flex:none;justify-content:center;align-items:center;gap:6px;padding:0 10px;font-size:12px;display:inline-flex}.ZprdQa_textButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_textButton:disabled,.ZprdQa_iconButton:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}.ZprdQa_textButton:disabled:hover,.ZprdQa_iconButton:disabled:hover{background:0 0}.ZprdQa_plain{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--ds-font-mono);margin:0;font-size:12px;line-height:18px}.ZprdQa_htmlPreview{border:1px solid var(--dsw-alias-border-l2);background:#fff;border-radius:6px;width:100%;min-height:420px}.ZprdQa_editor{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);width:100%;min-height:calc(100vh - 190px);color:var(--dsw-alias-label-primary);font-family:var(--ds-font-mono);border-radius:6px;padding:10px 12px;font-size:12px;line-height:18px;display:block}.ZprdQa_menu{z-index:21;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:150px;box-shadow:var(--dsw-alias-shadow-l2);border-radius:8px;padding:4px;position:fixed}.ZprdQa_menuItem{width:100%;min-height:30px;color:var(--dsw-alias-label-primary);cursor:pointer;font:inherit;text-align:left;background:0 0;border:0;border-radius:6px;align-items:center;gap:8px;padding:5px 8px;font-size:13px;display:flex}.ZprdQa_menuItem:hover{background:var(--dsw-alias-interactive-bg-hover)}.ZprdQa_notice{color:var(--dsw-alias-label-secondary);padding:14px 12px;font-size:13px}.ZprdQa_error{color:var(--dsw-alias-label-danger);white-space:pre-wrap;margin:0;padding:14px 12px;font-size:13px}@media (width<=720px){.ZprdQa_panel{border-radius:0;width:100vw;height:100vh;margin:0}.ZprdQa_body{grid-template-rows:minmax(220px,40vh) minmax(0,1fr);grid-template-columns:1fr}.ZprdQa_bodyCollapsed{grid-template-rows:minmax(0,1fr)}.ZprdQa_browser{border-right:0;border-bottom:1px solid var(--dsw-alias-border-l2)}.ZprdQa_editor{min-height:360px}}";
+		const css = ".ZprdQa_actionButton{width:100%;min-width:0;height:32px;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:8px;flex:none;justify-content:center;align-items:center;gap:6px;padding:0 10px;display:inline-flex}.ZprdQa_actionButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_actionButtonRail{border-radius:50%;width:36px;height:36px;padding:0}.ZprdQa_actionLabel{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.ZprdQa_overlay{z-index:1000;pointer-events:none;justify-content:center;align-items:center;padding:5vh 5vw;display:flex;position:fixed;inset:0}.ZprdQa_backdrop{appearance:none;background:var(--dsw-alias-bg-mask-1,#0000006b);backdrop-filter:var(--dsw-mask-blur,blur(2px));pointer-events:auto;border:0;margin:0;padding:0;position:absolute;inset:0}.ZprdQa_panel{z-index:1;border:1px solid var(--dsw-alias-border-inverted,var(--dsw-alias-border-l2));background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));width:90vw;height:90vh;color:var(--dsw-alias-label-primary);box-shadow:var(--dsw-shadow-lv3,var(--dsw-alias-shadow-l3));pointer-events:auto;border-radius:24px;grid-template-rows:auto minmax(0,1fr);display:grid;position:relative;overflow:hidden}.ZprdQa_header{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:center;gap:8px;min-width:0;padding:12px 14px;display:flex}.ZprdQa_title{flex:1;min-width:0;margin:0;font-size:14px;font-weight:600;line-height:20px}.ZprdQa_iconButton{width:30px;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:0;border-radius:50%;flex:none;justify-content:center;align-items:center;display:inline-flex}.ZprdQa_iconButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_body{grid-template-columns:minmax(220px,320px) minmax(0,1fr);min-height:0;display:grid}.ZprdQa_bodyCollapsed{grid-template-columns:minmax(0,1fr)}.ZprdQa_browser{border-right:1px solid var(--dsw-alias-border-l2);grid-template-rows:auto auto minmax(0,1fr);min-width:0;min-height:0;display:grid}.ZprdQa_rootSelect{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:0;height:32px;color:var(--dsw-alias-label-primary);border-radius:8px;margin:12px}.ZprdQa_breadcrumbs{align-items:center;gap:4px;min-width:0;padding:0 12px 10px;display:flex;overflow:auto hidden}.ZprdQa_crumb{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:0;border-radius:6px;flex:none;padding:4px 6px;font-size:12px}.ZprdQa_crumb:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_list{min-height:0;padding:0 8px 10px;overflow:auto}.ZprdQa_row{width:100%;min-height:30px;color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;background:0 0;border:0;border-radius:6px;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 8px;display:grid}.ZprdQa_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.ZprdQa_row[aria-disabled=true]{color:var(--dsw-alias-label-tertiary)}.ZprdQa_name{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.ZprdQa_meta{color:var(--dsw-alias-label-tertiary);font-size:11px}.ZprdQa_viewer{min-width:0;min-height:0;padding:18px 22px;overflow:auto}.ZprdQa_viewerHeader{align-items:center;gap:10px;min-width:0;margin:0 0 14px;display:flex}.ZprdQa_fileTitle{text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;margin:0;font-size:16px;font-weight:600;line-height:22px;overflow:hidden}.ZprdQa_viewerActions{flex:none;align-items:center;gap:6px;display:inline-flex}.ZprdQa_textButton{min-width:0;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:6px;flex:none;justify-content:center;align-items:center;gap:6px;padding:0 10px;font-size:12px;display:inline-flex}.ZprdQa_textButton:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ZprdQa_textButton:disabled,.ZprdQa_iconButton:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}.ZprdQa_textButton:disabled:hover,.ZprdQa_iconButton:disabled:hover{background:0 0}.ZprdQa_plain{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--ds-font-mono);margin:0;font-size:12px;line-height:18px}.ZprdQa_highlightedLine{background:var(--dsw-alias-bg-warning-subtle,#fff0b48c);box-shadow:0 0 0 2px var(--dsw-alias-bg-warning-subtle,#fff0b48c);display:inline}.ZprdQa_htmlPreview{border:1px solid var(--dsw-alias-border-l2);background:#fff;border-radius:6px;width:100%;min-height:420px}.ZprdQa_editor{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);width:100%;min-height:calc(100vh - 190px);color:var(--dsw-alias-label-primary);font-family:var(--ds-font-mono);border-radius:6px;padding:10px 12px;font-size:12px;line-height:18px;display:block}.ZprdQa_menu{z-index:21;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:150px;box-shadow:var(--dsw-alias-shadow-l2);border-radius:8px;padding:4px;position:fixed}.ZprdQa_menuItem{width:100%;min-height:30px;color:var(--dsw-alias-label-primary);cursor:pointer;font:inherit;text-align:left;background:0 0;border:0;border-radius:6px;align-items:center;gap:8px;padding:5px 8px;font-size:13px;display:flex}.ZprdQa_menuItem:hover{background:var(--dsw-alias-interactive-bg-hover)}.ZprdQa_notice{color:var(--dsw-alias-label-secondary);padding:14px 12px;font-size:13px}.ZprdQa_error{color:var(--dsw-alias-label-danger);white-space:pre-wrap;margin:0;padding:14px 12px;font-size:13px}@media (width<=720px){.ZprdQa_body{grid-template-rows:minmax(220px,40vh) minmax(0,1fr);grid-template-columns:1fr}.ZprdQa_bodyCollapsed{grid-template-rows:minmax(0,1fr)}.ZprdQa_browser{border-right:0;border-bottom:1px solid var(--dsw-alias-border-l2)}.ZprdQa_editor{min-height:360px}}";
 		const tagId = "@openclaw/dsh-workspace-file-viewer/WorkspaceFileViewerPanel.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -4283,43 +4322,48 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			document.head.appendChild(tag);
 		}
 		var WorkspaceFileViewerPanel_module_css_default = {
-			"iconButton": "ZprdQa_iconButton",
-			"browser": "ZprdQa_browser",
-			"crumb": "ZprdQa_crumb",
-			"error": "ZprdQa_error",
-			"viewerActions": "ZprdQa_viewerActions",
-			"bodyCollapsed": "ZprdQa_bodyCollapsed",
-			"breadcrumbs": "ZprdQa_breadcrumbs",
-			"list": "ZprdQa_list",
-			"title": "ZprdQa_title",
 			"name": "ZprdQa_name",
-			"editor": "ZprdQa_editor",
-			"actionButtonRail": "ZprdQa_actionButtonRail",
-			"actionButton": "ZprdQa_actionButton",
-			"meta": "ZprdQa_meta",
+			"row": "ZprdQa_row",
+			"list": "ZprdQa_list",
+			"bodyCollapsed": "ZprdQa_bodyCollapsed",
 			"viewerHeader": "ZprdQa_viewerHeader",
-			"actionLabel": "ZprdQa_actionLabel",
-			"textButton": "ZprdQa_textButton",
-			"overlay": "ZprdQa_overlay",
-			"fileTitle": "ZprdQa_fileTitle",
-			"menu": "ZprdQa_menu",
-			"plain": "ZprdQa_plain",
-			"backdrop": "ZprdQa_backdrop",
-			"menuItem": "ZprdQa_menuItem",
-			"viewer": "ZprdQa_viewer",
-			"notice": "ZprdQa_notice",
+			"actionButton": "ZprdQa_actionButton",
 			"panel": "ZprdQa_panel",
-			"header": "ZprdQa_header",
+			"menu": "ZprdQa_menu",
+			"error": "ZprdQa_error",
+			"overlay": "ZprdQa_overlay",
+			"iconButton": "ZprdQa_iconButton",
+			"breadcrumbs": "ZprdQa_breadcrumbs",
+			"crumb": "ZprdQa_crumb",
+			"viewerActions": "ZprdQa_viewerActions",
+			"actionLabel": "ZprdQa_actionLabel",
+			"notice": "ZprdQa_notice",
+			"browser": "ZprdQa_browser",
 			"body": "ZprdQa_body",
-			"rootSelect": "ZprdQa_rootSelect",
 			"htmlPreview": "ZprdQa_htmlPreview",
-			"row": "ZprdQa_row"
+			"rootSelect": "ZprdQa_rootSelect",
+			"fileTitle": "ZprdQa_fileTitle",
+			"menuItem": "ZprdQa_menuItem",
+			"title": "ZprdQa_title",
+			"meta": "ZprdQa_meta",
+			"actionButtonRail": "ZprdQa_actionButtonRail",
+			"textButton": "ZprdQa_textButton",
+			"plain": "ZprdQa_plain",
+			"viewer": "ZprdQa_viewer",
+			"backdrop": "ZprdQa_backdrop",
+			"highlightedLine": "ZprdQa_highlightedLine",
+			"header": "ZprdQa_header",
+			"editor": "ZprdQa_editor"
 		};
 		//#endregion
 		//#region src/client/WorkspaceFileViewerPanel.tsx
 		let panelOpen = false;
+		let openRequest;
+		let openRequestId = 0;
 		const listeners = /* @__PURE__ */ new Set();
+		const CLIENT_READABLE_DOTFILES = new Set([".env"]);
 		function setPanelOpen(next) {
+			if (!next) openRequest = void 0;
 			panelOpen = next;
 			for (const listener of listeners) listener();
 		}
@@ -4336,8 +4380,36 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, []);
 			return open;
 		}
+		/** Open a resolved workspace path in the overlay explorer/viewer. */
+		function openWorkspaceFileViewerTarget(target) {
+			openRequest = {
+				id: openRequestId += 1,
+				target
+			};
+			setPanelOpen(true);
+		}
+		/** Close the workspace file viewer overlay. */
+		function closeWorkspaceFileViewer() {
+			setPanelOpen(false);
+		}
+		function useOpenRequest() {
+			const [request, setRequest] = (0, react.useState)(openRequest);
+			(0, react.useEffect)(() => {
+				const listener = () => {
+					setRequest(openRequest);
+				};
+				listeners.add(listener);
+				return () => {
+					listeners.delete(listener);
+				};
+			}, []);
+			return request;
+		}
 		function formatSize(size, t) {
 			return size === void 0 ? "" : t("file.size", { size });
+		}
+		function canPreviewEntry(entry) {
+			return entry.kind === "file" && (entry.readable || CLIENT_READABLE_DOTFILES.has(entry.name.toLowerCase()));
 		}
 		/** Sidebar footer action that opens the workspace file browser overlay. */
 		function WorkspaceFileViewerAction({ wide, t }) {
@@ -4362,10 +4434,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** Frame overlay that browses configured roots and previews Markdown/plain text files. */
 		function WorkspaceFileViewerOverlay({ roots, list, read, save, addToChat, t }) {
 			const open = usePanelOpen();
+			const request = useOpenRequest();
 			const [rootRows, setRootRows] = (0, react.useState)([]);
 			const [rootId, setRootId] = (0, react.useState)("");
 			const [listing, setListing] = (0, react.useState)();
 			const [file, setFile] = (0, react.useState)();
+			const [previewLine, setPreviewLine] = (0, react.useState)();
 			const [explorerOpen, setExplorerOpen] = (0, react.useState)(true);
 			const [editMode, setEditMode] = (0, react.useState)(false);
 			const [draft, setDraft] = (0, react.useState)("");
@@ -4374,7 +4448,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const [loading, setLoading] = (0, react.useState)(false);
 			const [error, setError] = (0, react.useState)();
 			(0, react.useEffect)(() => {
-				if (!open) return;
+				if (!open || request !== void 0) return;
 				let cancelled = false;
 				setLoading(true);
 				setError(void 0);
@@ -4385,6 +4459,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setRootId(nextRoot);
 					setEditMode(false);
 					setDraft("");
+					setPreviewLine(void 0);
 					if (nextRoot === "") return void 0;
 					return list(nextRoot, "");
 				}).then((nextListing) => {
@@ -4404,6 +4479,45 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				open,
 				roots
 			]);
+			(0, react.useEffect)(() => {
+				if (!open || request === void 0) return;
+				let cancelled = false;
+				const target = request.target;
+				if (openRequest?.id === request.id) openRequest = void 0;
+				const directoryPath = target.kind === "directory" ? target.path : parentPath(target.path);
+				setLoading(true);
+				setError(void 0);
+				setExplorerOpen(true);
+				setMenu(void 0);
+				roots().then(async (rows) => {
+					if (cancelled) return;
+					setRootRows(ensureRoot(rows, target.root));
+					const [nextListing, nextFile] = await Promise.all([list(target.root.id, directoryPath), target.kind === "file" ? read(target.root.id, target.path) : Promise.resolve(void 0)]);
+					if (cancelled) return;
+					setRootId(target.root.id);
+					setListing(nextListing);
+					setFile(nextFile);
+					setEditMode(false);
+					setDraft(nextFile?.content ?? "");
+					setPreviewLine(target.kind === "file" && target.line !== void 0 ? {
+						path: target.path,
+						line: target.line
+					} : void 0);
+				}).catch((cause) => {
+					if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause));
+				}).finally(() => {
+					if (!cancelled) setLoading(false);
+				});
+				return () => {
+					cancelled = true;
+				};
+			}, [
+				list,
+				open,
+				read,
+				request,
+				roots
+			]);
 			const loadDirectory = (nextRootId, path) => {
 				setLoading(true);
 				setError(void 0);
@@ -4411,6 +4525,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setRootId(nextRootId);
 					setListing(nextListing);
 					setFile(void 0);
+					setPreviewLine(void 0);
 					setEditMode(false);
 					setDraft("");
 					setMenu(void 0);
@@ -4427,6 +4542,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				read(rootId, path).then((nextFile) => {
 					setFile(nextFile);
 					setDraft(nextFile.content);
+					setPreviewLine(void 0);
+					setEditMode(false);
+				}).catch((cause) => {
+					setError(cause instanceof Error ? cause.message : String(cause));
+				}).finally(() => {
+					setLoading(false);
+				});
+			};
+			const loadPreviewHtmlLink = (path) => {
+				if (rootId === "") return;
+				const directoryPath = parentPath(path);
+				setLoading(true);
+				setError(void 0);
+				Promise.all([listing?.path === directoryPath ? Promise.resolve(listing) : list(rootId, directoryPath), read(rootId, path)]).then(([nextListing, nextFile]) => {
+					setListing(nextListing);
+					setFile(nextFile);
+					setDraft(nextFile.content);
+					setPreviewLine(void 0);
 					setEditMode(false);
 				}).catch((cause) => {
 					setError(cause instanceof Error ? cause.message : String(cause));
@@ -4441,6 +4574,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				save(rootId, file.path, draft).then((nextFile) => {
 					setFile(nextFile);
 					setDraft(nextFile.content);
+					setPreviewLine(void 0);
 					setEditMode(false);
 				}).catch((cause) => {
 					setError(cause instanceof Error ? cause.message : String(cause));
@@ -4662,7 +4796,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 									onChange: (event) => {
 										setDraft(event.currentTarget.value);
 									}
-								}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FilePreview, { file })] })]
+								}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FilePreview, {
+									file,
+									rootId,
+									onLocalHtmlLink: loadPreviewHtmlLink,
+									...previewLine?.path === file.path ? { line: previewLine.line } : {}
+								})] })]
 							})]
 						}),
 						menu !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
@@ -4686,22 +4825,109 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				})]
 			});
 		}
-		function FilePreview({ file }) {
+		function FilePreview({ file, rootId, line, onLocalHtmlLink }) {
 			if (file.mode === "markdown") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, { text: file.content });
-			if (file.mode === "html") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
-				className: WorkspaceFileViewerPanel_module_css_default.htmlPreview,
-				sandbox: "",
-				srcDoc: file.content,
-				title: file.name
+			if (file.mode === "html") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(HtmlPreview, {
+				file,
+				rootId,
+				onLocalHtmlLink
+			});
+			if (line !== void 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(LinePreview, {
+				content: file.content,
+				line
 			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
 				className: WorkspaceFileViewerPanel_module_css_default.plain,
 				children: file.content
 			});
 		}
+		function HtmlPreview({ file, rootId, onLocalHtmlLink }) {
+			const iframeRef = (0, react.useRef)(null);
+			const cleanupRef = (0, react.useRef)();
+			(0, react.useEffect)(() => () => {
+				cleanupRef.current?.();
+			}, []);
+			const attachPreviewLinks = () => {
+				cleanupRef.current?.();
+				const doc = iframeRef.current?.contentDocument;
+				if (doc === void 0 || doc === null) return;
+				const listener = (event) => {
+					const anchor = (event.target instanceof (doc.defaultView?.Element ?? Element) ? event.target : void 0)?.closest("a[href]");
+					if (anchor === void 0 || anchor === null) return;
+					const href = anchor.getAttribute("href") ?? "";
+					const nextPath = resolveHtmlPreviewPath(file.path, href);
+					if (nextPath === void 0) {
+						if (!href.trim().startsWith("#")) event.preventDefault();
+						return;
+					}
+					event.preventDefault();
+					if (rootId !== "") onLocalHtmlLink(nextPath);
+				};
+				doc.addEventListener("click", listener);
+				cleanupRef.current = () => {
+					doc.removeEventListener("click", listener);
+				};
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
+				ref: iframeRef,
+				className: WorkspaceFileViewerPanel_module_css_default.htmlPreview,
+				sandbox: "allow-same-origin",
+				srcDoc: file.content,
+				title: file.name,
+				onLoad: attachPreviewLinks
+			});
+		}
+		/** Resolve a preview iframe anchor into a root-relative local HTML path. */
+		function resolveHtmlPreviewPath(filePath, href) {
+			const trimmed = href.trim();
+			if (trimmed === "" || trimmed.startsWith("#") || trimmed.startsWith("/") || trimmed.startsWith("\\") || trimmed.startsWith("//") || /^[A-Za-z][A-Za-z\d+.-]*:/u.test(trimmed) || trimmed.includes("\\")) return;
+			const pathOnly = trimmed.split(/[?#]/u, 1)[0] ?? "";
+			if (pathOnly === "") return void 0;
+			let decoded;
+			try {
+				decoded = decodeURIComponent(pathOnly);
+			} catch {
+				return;
+			}
+			const segments = parentPath(filePath).split("/").filter(Boolean);
+			for (const segment of decoded.split("/")) {
+				if (segment === "" || segment === ".") continue;
+				if (segment === "..") {
+					if (segments.length === 0) return void 0;
+					segments.pop();
+				} else segments.push(segment);
+			}
+			const nextPath = segments.join("/");
+			return nextPath.toLowerCase().endsWith(".html") ? nextPath : void 0;
+		}
+		function LinePreview({ content, line }) {
+			const lineRef = (0, react.useRef)(null);
+			(0, react.useEffect)(() => {
+				lineRef.current?.scrollIntoView({ block: "center" });
+			}, [line]);
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
+				className: WorkspaceFileViewerPanel_module_css_default.plain,
+				children: content.split("\n").map((text, index, rows) => {
+					const lineNumber = index + 1;
+					return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						ref: lineNumber === line ? lineRef : void 0,
+						className: lineNumber === line ? WorkspaceFileViewerPanel_module_css_default.highlightedLine : void 0,
+						"data-line": lineNumber,
+						children: [text, index < rows.length - 1 ? "\n" : ""]
+					}, lineNumber);
+				})
+			});
+		}
 		function rootPath(root, relativePath) {
 			if (relativePath === "") return root.path;
 			return `${root.path.replace(/\/+$/u, "")}/${relativePath}`;
+		}
+		function parentPath(relativePath) {
+			const index = relativePath.lastIndexOf("/");
+			return index < 0 ? "" : relativePath.slice(0, index);
+		}
+		function ensureRoot(roots, targetRoot) {
+			return roots.some((root) => root.id === targetRoot.id) ? roots : [targetRoot, ...roots];
 		}
 		function EntryRow({ entry, onDirectory, onFile, onMenu, onTouchMenu, t }) {
 			const longPress = (0, react.useRef)();
@@ -4711,11 +4937,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				longPress.current = void 0;
 			};
 			(0, react.useEffect)(() => clearLongPress, []);
+			const previewable = canPreviewEntry(entry);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				type: "button",
 				className: WorkspaceFileViewerPanel_module_css_default.row,
-				"aria-disabled": entry.kind === "file" && !entry.readable,
-				title: entry.kind === "file" && !entry.readable ? t("unsupported") : void 0,
+				"aria-disabled": entry.kind === "file" && !previewable,
+				title: entry.kind === "file" && !previewable ? t("unsupported") : void 0,
 				onContextMenu: (event) => {
 					onMenu(event, entry.path);
 				},
@@ -4740,7 +4967,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						return;
 					}
 					if (entry.kind === "directory") onDirectory(entry.path);
-					else if (entry.readable) onFile(entry.path);
+					else if (previewable) onFile(entry.path);
 				},
 				children: [
 					entry.kind === "directory" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconFolderClose16, {}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCodeOutline16, {}),
@@ -4779,6 +5006,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"menu.addToChat": "添加到聊天",
 			"chat.added": "已添加到聊天输入",
 			"chat.noSession": "没有可用的聊天会话",
+			"mention.open": "在工作区文件浏览器中打开 {path}",
 			"viewer.edit": "编辑文件",
 			"viewer.view": "查看文件",
 			"viewer.save": "保存",
@@ -4805,6 +5033,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"menu.addToChat": "Add to chat",
 			"chat.added": "Added to chat input",
 			"chat.noSession": "No active chat session is available",
+			"mention.open": "Open {path} in workspace file browser",
 			"viewer.edit": "Edit file",
 			"viewer.view": "View file",
 			"viewer.save": "Save",
@@ -4857,6 +5086,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (!result.ok) throw new Error(result.error.message);
 					return result.value;
 				},
+				resolveOpenPath: async (rawTarget) => {
+					const result = await remote().resolveOpenPath(rawTarget);
+					if (!result.ok) throw new Error(result.error.message);
+					openWorkspaceFileViewerTarget(result.value);
+					return result.value;
+				},
 				addToChat: async (path) => {
 					if (await insertPathIntoVisibleComposer(path)) return;
 					const sessionId = await resolveSessionForDraft(ctx, path);
@@ -4885,6 +5120,53 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				locale: NS,
 				inject: injected
 			}, WorkspaceFileViewerOverlay));
+			ctx.effect(() => registerWorkspaceChatFileMentions(ctx, workspaceChatFileMentions(injected, ctx.locale.bind(NS))), "ui-workspace-file-viewer: chat file mentions");
+		}
+		function workspaceChatFileMentions(injected, t) {
+			return { forClosing() {
+				return { resolve(value) {
+					if (!isWorkspaceMentionCandidate(value)) return void 0;
+					return {
+						open: () => {
+							injected().resolveOpenPath(value).catch(() => {});
+						},
+						label: t("mention.open", { path: value }),
+						title: value
+					};
+				} };
+			} };
+		}
+		function registerWorkspaceChatFileMentions(ctx, workspaceMentions) {
+			const existing = ctx.get("chatFileMentions");
+			if (existing === void 0) return ctx.provide("chatFileMentions", workspaceMentions);
+			const originalForClosing = existing.forClosing.bind(existing);
+			existing.forClosing = (owner) => mergeFileMentions(originalForClosing(owner), workspaceMentions.forClosing(owner));
+			return () => {
+				existing.forClosing = originalForClosing;
+			};
+		}
+		function mergeFileMentions(primary, fallback) {
+			if (primary === void 0) return fallback;
+			if (fallback === void 0) return primary;
+			return { resolve(value) {
+				return primary.resolve(value) ?? fallback.resolve(value);
+			} };
+		}
+		function isWorkspaceMentionCandidate(value) {
+			return isAbsolutePathCandidate(value) || isLocalFileUrlCandidate(value);
+		}
+		function isAbsolutePathCandidate(value) {
+			if (!value.startsWith("/") || value.includes("#")) return false;
+			return true;
+		}
+		function isLocalFileUrlCandidate(value) {
+			if (!value.startsWith("file://") || value.includes("#")) return false;
+			try {
+				const url = new URL(value);
+				return url.protocol === "file:" && (url.hostname === "" || url.hostname === "localhost") && url.search === "";
+			} catch {
+				return false;
+			}
 		}
 		async function resolveSessionForDraft(ctx, path) {
 			const current = ctx.sessions.list.getSnapshot().current;
@@ -4970,7 +5252,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		exports.apply = apply;
+		exports.closeWorkspaceFileViewer = closeWorkspaceFileViewer;
 		exports.inject = inject;
+		exports.openWorkspaceFileViewerTarget = openWorkspaceFileViewerTarget;
 		return module.exports;
 	}
 });

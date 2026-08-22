@@ -1,6 +1,7 @@
 import { mkdtemp, readFile, rm, symlink, writeFile, mkdir } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
@@ -52,6 +53,7 @@ describe('WorkspaceFileViewerGateway', () => {
     })
     expect(remoteMethods(viewer)).toEqual([
       { method: 'roots', invocation: { kind: 'direct' } },
+      { method: 'resolveOpenPath', invocation: { kind: 'direct' } },
       { method: 'list', invocation: { kind: 'direct' } },
       { method: 'read', invocation: { kind: 'direct' } },
       { method: 'save', invocation: { kind: 'direct' } },
@@ -154,6 +156,114 @@ describe('WorkspaceFileViewerGateway', () => {
     await expect(viewer.save('0', 'secret-link.txt', 'no')).rejects.toThrow('escapes')
     await expect(viewer.save('0', 'archive.zip', 'no')).rejects.toThrow('unsupported')
     await expect(viewer.save('0', 'large.txt', '12345')).rejects.toThrow('exceeds')
+  })
+
+  it('resolves allowed absolute file and directory paths into viewer metadata', async () => {
+    const root = await tempRoot()
+    await mkdir(join(root, 'docs'))
+    await writeFile(join(root, 'docs', 'guide.md'), '# Guide\n')
+    const viewer = await harness(root)
+
+    await expect(viewer.resolveOpenPath(join(root, 'docs', 'guide.md'))).resolves.toMatchObject({
+      root: { id: '0', label: 'Fixture', path: root },
+      path: 'docs/guide.md',
+      kind: 'file',
+      displayPath: join(root, 'docs', 'guide.md'),
+    })
+    await expect(viewer.resolveOpenPath(join(root, 'docs'))).resolves.toMatchObject({
+      root: { id: '0', label: 'Fixture', path: root },
+      path: 'docs',
+      kind: 'directory',
+      displayPath: join(root, 'docs'),
+    })
+  })
+
+  it('resolves encoded spaces and local file URLs', async () => {
+    const root = await tempRoot()
+    await mkdir(join(root, 'has space'))
+    await writeFile(join(root, 'has space', 'note file.txt'), 'note\n')
+    const viewer = await harness(root)
+
+    await expect(viewer.resolveOpenPath(`${root}/has%20space/note%20file.txt`)).resolves.toMatchObject({
+      path: 'has space/note file.txt',
+      kind: 'file',
+    })
+    await expect(viewer.resolveOpenPath(pathToFileURL(join(root, 'has space')).href)).resolves.toMatchObject({
+      path: 'has space',
+      kind: 'directory',
+    })
+    await expect(viewer.resolveOpenPath(pathToFileURL(join(root, 'has space', 'note file.txt')).href)).resolves.toMatchObject({
+      path: 'has space/note file.txt',
+      kind: 'file',
+    })
+  })
+
+  it('supports positive file line suffixes and rejects invalid line suffixes', async () => {
+    const root = await tempRoot()
+    await mkdir(join(root, 'src'))
+    await writeFile(join(root, 'src', 'index.ts'), 'const ok = true\n')
+    const viewer = await harness(root)
+
+    await expect(viewer.resolveOpenPath(`${join(root, 'src', 'index.ts')}:12`)).resolves.toMatchObject({
+      path: 'src/index.ts',
+      kind: 'file',
+      line: 12,
+    })
+    await expect(viewer.resolveOpenPath(`${pathToFileURL(join(root, 'src', 'index.ts')).href}:3`)).resolves.toMatchObject({
+      path: 'src/index.ts',
+      kind: 'file',
+      line: 3,
+    })
+    await expect(viewer.resolveOpenPath(`${join(root, 'src')}:4`)).rejects.toThrow('line suffix')
+    await expect(viewer.resolveOpenPath(`${join(root, 'src', 'index.ts')}:0`)).rejects.toThrow('invalid line')
+    await expect(viewer.resolveOpenPath(`${join(root, 'src', 'index.ts')}:abc`)).rejects.toThrow('invalid line')
+  })
+
+  it('does not mistake an existing colon filename for a line suffix', async () => {
+    const root = await tempRoot()
+    await writeFile(join(root, 'notes:today.txt'), 'note\n')
+    const viewer = await harness(root)
+
+    await expect(viewer.resolveOpenPath(join(root, 'notes:today.txt'))).resolves.toMatchObject({
+      path: 'notes:today.txt',
+      kind: 'file',
+    })
+  })
+
+  it('uses the longest matching canonical root for overlapping roots', async () => {
+    const root = await tempRoot()
+    await mkdir(join(root, 'workspace'))
+    await writeFile(join(root, 'workspace', 'task.md'), '# Task\n')
+    const viewer = await configuredHarness({
+      roots: [
+        { path: root, label: 'Outer' },
+        { path: join(root, 'workspace'), label: 'Inner' },
+      ],
+      maxFileBytes: 4096,
+    })
+
+    await expect(viewer.resolveOpenPath(join(root, 'workspace', 'task.md'))).resolves.toMatchObject({
+      root: { id: '1', label: 'Inner', path: join(root, 'workspace') },
+      path: 'task.md',
+      kind: 'file',
+    })
+  })
+
+  it('blocks unsupported links, out-of-root paths, malformed inputs, missing targets, and symlink escapes', async () => {
+    const root = await tempRoot()
+    const outside = await tempRoot()
+    await writeFile(join(root, 'ok.txt'), 'ok')
+    await writeFile(join(outside, 'secret.txt'), 'secret')
+    await symlink(join(outside, 'secret.txt'), join(root, 'secret-link.txt'))
+    const viewer = await harness(root)
+
+    await expect(viewer.resolveOpenPath('https://example.test/file.txt')).rejects.toThrow('unsupported')
+    await expect(viewer.resolveOpenPath('/etc/passwd')).rejects.toThrow('outside configured')
+    await expect(viewer.resolveOpenPath(`${root}/bad%ZZpath`)).rejects.toThrow('malformed percent')
+    await expect(viewer.resolveOpenPath('file://remote-host/tmp/file.txt')).rejects.toThrow('malformed file URL')
+    await expect(viewer.resolveOpenPath(join(root, 'missing.txt'))).rejects.toThrow()
+    await expect(viewer.resolveOpenPath(join(root, 'secret-link.txt'))).rejects.toThrow('outside configured')
+    await expect(viewer.resolveOpenPath(join(dirname(root), '..', 'passwd'))).rejects.toThrow()
   })
 
   it('validates configured roots and fills default configuration values', async () => {

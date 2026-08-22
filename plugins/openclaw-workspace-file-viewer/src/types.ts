@@ -33,6 +33,19 @@ export interface WorkspaceFileViewerListing {
   readonly entries: readonly WorkspaceFileViewerEntry[]
 }
 
+export interface WorkspaceFileViewerOpenTarget {
+  /** Root metadata for the resolved target. */
+  readonly root: WorkspaceFileViewerRoot
+  /** Relative target path from the matched root. */
+  readonly path: string
+  /** Target kind. */
+  readonly kind: 'directory' | 'file'
+  /** Absolute path suitable for display. */
+  readonly displayPath: string
+  /** Optional 1-based line hint for file targets. */
+  readonly line?: number
+}
+
 export interface WorkspaceFileViewerFile {
   /** Root metadata for the file. */
   readonly root: WorkspaceFileViewerRoot

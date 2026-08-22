@@ -3,18 +3,22 @@
 import workspaceFileViewerRemote from '@openclaw/dsh-workspace-file-viewer/remote'
 import type {} from '@openclaw/dsh-workspace-file-viewer/remote'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ChatFileMentions } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import {
-  WorkspaceFileViewerAction, WorkspaceFileViewerOverlay, type WorkspaceFileViewerInjected,
+  openWorkspaceFileViewerTarget, WorkspaceFileViewerAction, WorkspaceFileViewerOverlay,
+  type WorkspaceFileViewerInjected,
 } from './WorkspaceFileViewerPanel.tsx'
 import { en, NS, zh, type WorkspaceFileViewerKey } from './locales.ts'
 
 export type {
   WorkspaceFileViewerActionProps, WorkspaceFileViewerInjected, WorkspaceFileViewerOverlayProps,
 } from './WorkspaceFileViewerPanel.tsx'
+export { closeWorkspaceFileViewer, openWorkspaceFileViewerTarget } from './WorkspaceFileViewerPanel.tsx'
 export type { WorkspaceFileViewerKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -57,6 +61,12 @@ export async function apply(ctx: ClientContext): Promise<void> {
       if (!result.ok) throw new Error(result.error.message)
       return result.value
     },
+    resolveOpenPath: async (rawTarget) => {
+      const result = await remote().resolveOpenPath(rawTarget)
+      if (!result.ok) throw new Error(result.error.message)
+      openWorkspaceFileViewerTarget(result.value)
+      return result.value
+    },
     addToChat: async (path) => {
       if (await insertPathIntoVisibleComposer(path)) return
       const sessionId = await resolveSessionForDraft(ctx, path)
@@ -85,6 +95,79 @@ export async function apply(ctx: ClientContext): Promise<void> {
     locale: NS,
     inject: injected,
   }, WorkspaceFileViewerOverlay))
+  ctx.effect(
+    () => registerWorkspaceChatFileMentions(ctx, workspaceChatFileMentions(injected, ctx.locale.bind(NS))),
+    'ui-workspace-file-viewer: chat file mentions',
+  )
+}
+
+function workspaceChatFileMentions(
+  injected: () => WorkspaceFileViewerInjected,
+  t: (key: WorkspaceFileViewerKey, params?: Record<string, string | number>) => string,
+): ChatFileMentions {
+  return {
+    forClosing() {
+      return {
+        resolve(value) {
+          if (!isWorkspaceMentionCandidate(value)) return undefined
+          return {
+            open: () => {
+              void injected().resolveOpenPath(value).catch(() => {})
+            },
+            label: t('mention.open', { path: value }),
+            title: value,
+          }
+        },
+      }
+    },
+  }
+}
+
+function registerWorkspaceChatFileMentions(ctx: ClientContext, workspaceMentions: ChatFileMentions): () => void {
+  const existing = ctx.get('chatFileMentions') as ChatFileMentions | undefined
+  if (existing === undefined) return ctx.provide('chatFileMentions', workspaceMentions)
+  const originalForClosing = existing.forClosing.bind(existing)
+  existing.forClosing = owner => mergeFileMentions(originalForClosing(owner), workspaceMentions.forClosing(owner))
+  return () => {
+    existing.forClosing = originalForClosing
+  }
+}
+
+function mergeFileMentions(
+  primary: MarkdownFileMentions | undefined,
+  fallback: MarkdownFileMentions | undefined,
+): MarkdownFileMentions | undefined {
+  if (primary === undefined) return fallback
+  if (fallback === undefined) return primary
+  return {
+    resolve(value) {
+      return primary.resolve(value) ?? fallback.resolve(value)
+    },
+  }
+}
+
+function isWorkspaceMentionCandidate(value: string): boolean {
+  return isAbsolutePathCandidate(value) || isLocalFileUrlCandidate(value)
+}
+
+function isAbsolutePathCandidate(value: string): boolean {
+  if (!value.startsWith('/') || value.includes('#')) return false
+  try {
+    decodeURIComponent(value)
+  } catch {
+    return false
+  }
+  return true
+}
+
+function isLocalFileUrlCandidate(value: string): boolean {
+  if (!value.startsWith('file://') || value.includes('#')) return false
+  try {
+    const url = new URL(value)
+    return url.protocol === 'file:' && (url.hostname === '' || url.hostname === 'localhost') && url.search === ''
+  } catch {
+    return false
+  }
 }
 
 async function resolveSessionForDraft(

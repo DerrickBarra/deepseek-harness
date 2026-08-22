@@ -3,15 +3,18 @@
 import { constants } from 'node:fs'
 import { access, readFile, readdir, realpath, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
 import type {
-  WorkspaceFileViewerEntry, WorkspaceFileViewerFile, WorkspaceFileViewerListing, WorkspaceFileViewerRoot,
+  WorkspaceFileViewerEntry, WorkspaceFileViewerFile, WorkspaceFileViewerListing, WorkspaceFileViewerOpenTarget,
+  WorkspaceFileViewerRoot,
 } from './types.ts'
 
 export type {
-  WorkspaceFileViewerEntry, WorkspaceFileViewerFile, WorkspaceFileViewerListing, WorkspaceFileViewerRoot,
+  WorkspaceFileViewerEntry, WorkspaceFileViewerFile, WorkspaceFileViewerListing, WorkspaceFileViewerOpenTarget,
+  WorkspaceFileViewerRoot,
 } from './types.ts'
 
 /** One configured allowlisted root. */
@@ -76,7 +79,9 @@ function entryName(relativePath: string): string {
 }
 
 function extensionOf(filePath: string): string {
-  return path.extname(filePath).toLowerCase()
+  const base = path.basename(filePath).toLowerCase()
+  const extension = path.extname(base)
+  return extension === '' && base.startsWith('.') ? base : extension
 }
 
 function isReadableTextPath(filePath: string): boolean {
@@ -85,6 +90,52 @@ function isReadableTextPath(filePath: string): boolean {
 
 function toRootView(root: CanonicalRoot): WorkspaceFileViewerRoot {
   return { id: root.id, path: root.path, label: root.label }
+}
+
+function decodePathOnce(raw: string): string {
+  try {
+    return decodeURIComponent(raw)
+  } catch (cause) {
+    throw new Error(`malformed percent encoding in workspace file path: ${raw}`, { cause })
+  }
+}
+
+function parseOpenPath(rawTarget: string): { absolutePath: string, invalidLineCandidate?: string, line?: number } {
+  const trimmed = rawTarget.trim()
+  if (trimmed === '') throw new Error('workspace file path is required')
+  const target = parseOpenTarget(trimmed)
+  const lastSeparator = Math.max(target.lastIndexOf('/'), target.lastIndexOf('\\'))
+  const lastColon = target.lastIndexOf(':')
+  if (lastColon > lastSeparator) {
+    const suffix = target.slice(lastColon + 1)
+    const withoutSuffix = target.slice(0, lastColon)
+    if (/^\d+$/u.test(suffix)) {
+      const line = Number(suffix)
+      if (!Number.isSafeInteger(line) || line < 1) {
+        throw new Error(`invalid line suffix in workspace file path: ${rawTarget}`)
+      }
+      if (withoutSuffix === '') throw new Error(`invalid line suffix in workspace file path: ${rawTarget}`)
+      return { absolutePath: withoutSuffix, line }
+    }
+    if (suffix !== '' && path.isAbsolute(withoutSuffix)) {
+      return { absolutePath: target, invalidLineCandidate: withoutSuffix }
+    }
+  }
+  return { absolutePath: target }
+}
+
+function parseOpenTarget(rawTarget: string): string {
+  if (/^[A-Za-z][A-Za-z\d+.-]*:/u.test(rawTarget)) {
+    if (!rawTarget.toLowerCase().startsWith('file:')) {
+      throw new Error(`unsupported workspace file path scheme: ${rawTarget}`)
+    }
+    try {
+      return fileURLToPath(new URL(rawTarget))
+    } catch (cause) {
+      throw new Error(`malformed file URL for workspace file path: ${rawTarget}`, { cause })
+    }
+  }
+  return decodePathOnce(rawTarget)
 }
 
 /** Remote service for allowlisted workspace browsing. */
@@ -107,6 +158,44 @@ export class WorkspaceFileViewerGateway extends TypertRemoteService {
   @Remote('roots')
   async roots(): Promise<readonly WorkspaceFileViewerRoot[]> {
     return (await this.rootsReady).map(toRootView)
+  }
+
+  /**
+   * Resolve a local absolute path or file URL into safe viewer metadata.
+   * @param rawTarget - Absolute path, decoded once if percent-encoded, or local file URL with optional `:line`.
+   * @returns Root-relative metadata for a file or directory under a configured root.
+   */
+  @Remote('resolveOpenPath')
+  async resolveOpenPath(rawTarget: string): Promise<WorkspaceFileViewerOpenTarget> {
+    const { absolutePath, invalidLineCandidate, line } = parseOpenPath(rawTarget)
+    if (!path.isAbsolute(absolutePath)) throw new Error(`workspace file path must be absolute: ${rawTarget}`)
+    let canonical: string
+    try {
+      canonical = await realpath(absolutePath)
+    } catch (cause) {
+      if (invalidLineCandidate !== undefined && await this.isExistingFile(invalidLineCandidate)) {
+        throw new Error(`invalid line suffix in workspace file path: ${rawTarget}`, { cause })
+      }
+      throw cause
+    }
+    const targetStat = await stat(canonical)
+    const kind: WorkspaceFileViewerOpenTarget['kind'] = targetStat.isDirectory()
+      ? 'directory'
+      : targetStat.isFile() ? 'file' : (() => {
+        throw new Error(`not a file or directory: ${rawTarget}`)
+      })()
+    if (line !== undefined && kind !== 'file') {
+      throw new Error(`line suffix is only supported for files: ${rawTarget}`)
+    }
+    const root = this.matchRoot(await this.rootsReady, canonical)
+    if (root === undefined) throw new Error(`path is outside configured workspace roots: ${rawTarget}`)
+    return {
+      root: toRootView(root),
+      path: this.relativeFromRoot(root, canonical),
+      kind,
+      displayPath: canonical,
+      ...(line === undefined ? {} : { line }),
+    }
   }
 
   /**
@@ -243,6 +332,24 @@ export class WorkspaceFileViewerGateway extends TypertRemoteService {
       throw new Error(`path escapes the configured root: ${relative}`)
     }
     return canonical
+  }
+
+  private matchRoot(roots: readonly CanonicalRoot[], canonical: string): CanonicalRoot | undefined {
+    return roots
+      .filter(root => canonical === root.path || canonical.startsWith(root.pathWithSeparator))
+      .sort((left, right) => right.path.length - left.path.length)[0]
+  }
+
+  private relativeFromRoot(root: CanonicalRoot, canonical: string): string {
+    return path.relative(root.path, canonical).split(path.sep).join('/')
+  }
+
+  private async isExistingFile(absolutePath: string): Promise<boolean> {
+    try {
+      return (await stat(await realpath(absolutePath))).isFile()
+    } catch {
+      return false
+    }
   }
 
   private breadcrumbs(relative: string): WorkspaceFileViewerEntry[] {

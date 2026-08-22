@@ -1,7 +1,8 @@
 /** Workspace file viewer UI plugin, browser half. */
 import workspaceFileViewerRemote from '@openclaw/dsh-workspace-file-viewer/remote';
-import { WorkspaceFileViewerAction, WorkspaceFileViewerOverlay, } from "./WorkspaceFileViewerPanel.js";
+import { openWorkspaceFileViewerTarget, WorkspaceFileViewerAction, WorkspaceFileViewerOverlay, } from "./WorkspaceFileViewerPanel.js";
 import { en, NS, zh } from "./locales.js";
+export { closeWorkspaceFileViewer, openWorkspaceFileViewerTarget } from "./WorkspaceFileViewerPanel.js";
 /** Services required before this plugin can mount its own Remote namespace and UI. */
 export const inject = ['slots', 'locale', 'remote', 'sessions', 'workspaces', 'conversation'];
 /** Mount the package Remote contribution, sidebar action, and shell overlay. */
@@ -39,6 +40,13 @@ export async function apply(ctx) {
                 throw new Error(result.error.message);
             return result.value;
         },
+        resolveOpenPath: async (rawTarget) => {
+            const result = await remote().resolveOpenPath(rawTarget);
+            if (!result.ok)
+                throw new Error(result.error.message);
+            openWorkspaceFileViewerTarget(result.value);
+            return result.value;
+        },
         addToChat: async (path) => {
             if (await insertPathIntoVisibleComposer(path))
                 return;
@@ -69,6 +77,72 @@ export async function apply(ctx) {
         locale: NS,
         inject: injected,
     }, WorkspaceFileViewerOverlay));
+    ctx.effect(() => registerWorkspaceChatFileMentions(ctx, workspaceChatFileMentions(injected, ctx.locale.bind(NS))), 'ui-workspace-file-viewer: chat file mentions');
+}
+function workspaceChatFileMentions(injected, t) {
+    return {
+        forClosing() {
+            return {
+                resolve(value) {
+                    if (!isWorkspaceMentionCandidate(value))
+                        return undefined;
+                    return {
+                        open: () => {
+                            void injected().resolveOpenPath(value).catch(() => { });
+                        },
+                        label: t('mention.open', { path: value }),
+                        title: value,
+                    };
+                },
+            };
+        },
+    };
+}
+function registerWorkspaceChatFileMentions(ctx, workspaceMentions) {
+    const existing = ctx.get('chatFileMentions');
+    if (existing === undefined)
+        return ctx.provide('chatFileMentions', workspaceMentions);
+    const originalForClosing = existing.forClosing.bind(existing);
+    existing.forClosing = owner => mergeFileMentions(originalForClosing(owner), workspaceMentions.forClosing(owner));
+    return () => {
+        existing.forClosing = originalForClosing;
+    };
+}
+function mergeFileMentions(primary, fallback) {
+    if (primary === undefined)
+        return fallback;
+    if (fallback === undefined)
+        return primary;
+    return {
+        resolve(value) {
+            return primary.resolve(value) ?? fallback.resolve(value);
+        },
+    };
+}
+function isWorkspaceMentionCandidate(value) {
+    return isAbsolutePathCandidate(value) || isLocalFileUrlCandidate(value);
+}
+function isAbsolutePathCandidate(value) {
+    if (!value.startsWith('/') || value.includes('#'))
+        return false;
+    try {
+        decodeURIComponent(value);
+    }
+    catch {
+        return false;
+    }
+    return true;
+}
+function isLocalFileUrlCandidate(value) {
+    if (!value.startsWith('file://') || value.includes('#'))
+        return false;
+    try {
+        const url = new URL(value);
+        return url.protocol === 'file:' && (url.hostname === '' || url.hostname === 'localhost') && url.search === '';
+    }
+    catch {
+        return false;
+    }
 }
 async function resolveSessionForDraft(ctx, path) {
     const current = ctx.sessions.list.getSnapshot().current;
