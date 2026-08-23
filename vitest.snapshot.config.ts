@@ -1,5 +1,4 @@
 import { availableParallelism } from 'node:os'
-import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 import { standardDecoratorPlugin, vitestExecArgv } from './vitest.shared.ts'
 
@@ -38,9 +37,9 @@ if (process.env.DSH_SNAPSHOT === 'record') {
 
 export default defineConfig({
   // Same resolution note as vitest.config.ts: bare workspace names resolve
-  // through the tsconfig.base.json paths facade; the native option cannot do
-  // this (the root tsconfig is a solution file with no paths).
-  plugins: [tsconfigPaths({ projects: ['./tsconfig.base.json'] }), standardDecoratorPlugin()],
+  // through the repository tsconfig paths facade.
+  plugins: [standardDecoratorPlugin()],
+  resolve: { tsconfigPaths: true },
   test: {
     execArgv: vitestExecArgv,
     setupFiles: ['./scripts/test-invariants.ts'],

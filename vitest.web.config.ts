@@ -1,4 +1,3 @@
-import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 import { standardDecoratorPlugin, vitestExecArgv } from './vitest.shared.ts'
 
@@ -18,9 +17,9 @@ export default defineConfig({
   // facade has no include (match-all), so apps/web/tests resolves bare
   // workspace imports to source like every other lane.
   plugins: [
-    tsconfigPaths({ projects: ['./tsconfig.base.json'] }),
     standardDecoratorPlugin(),
   ],
+  resolve: { tsconfigPaths: true },
   test: {
     execArgv: vitestExecArgv,
     include: [
