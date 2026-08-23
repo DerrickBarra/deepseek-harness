@@ -4159,7 +4159,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 206,
+						"line": 208,
 						"column": 9
 					}
 				},
@@ -4195,7 +4195,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 249,
+						"line": 251,
 						"column": 9
 					}
 				},
@@ -4222,7 +4222,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 167,
+						"line": 169,
 						"column": 9
 					}
 				},
@@ -4240,7 +4240,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 157,
+						"line": 159,
 						"column": 9
 					}
 				},
@@ -4289,7 +4289,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "plugins/openclaw-workspace-file-viewer/src/index.ts",
-						"line": 280,
+						"line": 282,
 						"column": 9
 					}
 				}
@@ -4322,38 +4322,38 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			document.head.appendChild(tag);
 		}
 		var WorkspaceFileViewerPanel_module_css_default = {
-			"actionButton": "ZprdQa_actionButton",
-			"rootSelect": "ZprdQa_rootSelect",
-			"notice": "ZprdQa_notice",
-			"viewerHeader": "ZprdQa_viewerHeader",
-			"plain": "ZprdQa_plain",
-			"header": "ZprdQa_header",
-			"bodyCollapsed": "ZprdQa_bodyCollapsed",
-			"htmlPreview": "ZprdQa_htmlPreview",
-			"list": "ZprdQa_list",
 			"backdrop": "ZprdQa_backdrop",
-			"overlay": "ZprdQa_overlay",
-			"name": "ZprdQa_name",
-			"panel": "ZprdQa_panel",
-			"body": "ZprdQa_body",
-			"fileTitle": "ZprdQa_fileTitle",
-			"menuItem": "ZprdQa_menuItem",
 			"actionLabel": "ZprdQa_actionLabel",
-			"title": "ZprdQa_title",
-			"browser": "ZprdQa_browser",
-			"row": "ZprdQa_row",
-			"viewer": "ZprdQa_viewer",
 			"menu": "ZprdQa_menu",
-			"viewerActions": "ZprdQa_viewerActions",
-			"error": "ZprdQa_error",
-			"highlightedLine": "ZprdQa_highlightedLine",
-			"textButton": "ZprdQa_textButton",
+			"notice": "ZprdQa_notice",
+			"plain": "ZprdQa_plain",
+			"viewer": "ZprdQa_viewer",
+			"menuItem": "ZprdQa_menuItem",
+			"viewerHeader": "ZprdQa_viewerHeader",
+			"actionButtonRail": "ZprdQa_actionButtonRail",
+			"htmlPreview": "ZprdQa_htmlPreview",
 			"breadcrumbs": "ZprdQa_breadcrumbs",
-			"editor": "ZprdQa_editor",
-			"iconButton": "ZprdQa_iconButton",
-			"meta": "ZprdQa_meta",
 			"crumb": "ZprdQa_crumb",
-			"actionButtonRail": "ZprdQa_actionButtonRail"
+			"name": "ZprdQa_name",
+			"bodyCollapsed": "ZprdQa_bodyCollapsed",
+			"browser": "ZprdQa_browser",
+			"panel": "ZprdQa_panel",
+			"actionButton": "ZprdQa_actionButton",
+			"editor": "ZprdQa_editor",
+			"row": "ZprdQa_row",
+			"error": "ZprdQa_error",
+			"title": "ZprdQa_title",
+			"list": "ZprdQa_list",
+			"body": "ZprdQa_body",
+			"iconButton": "ZprdQa_iconButton",
+			"rootSelect": "ZprdQa_rootSelect",
+			"viewerActions": "ZprdQa_viewerActions",
+			"fileTitle": "ZprdQa_fileTitle",
+			"textButton": "ZprdQa_textButton",
+			"highlightedLine": "ZprdQa_highlightedLine",
+			"meta": "ZprdQa_meta",
+			"overlay": "ZprdQa_overlay",
+			"header": "ZprdQa_header"
 		};
 		//#endregion
 		//#region src/client/WorkspaceFileViewerPanel.tsx
