@@ -4,19 +4,21 @@ import { useEffect, useRef } from 'react'
 export interface DocumentTitleProps {
   /** Durable title of the selected session, or undefined for the product title. */
   title?: string
+  /** Active branding service product title. */
+  productTitle: string
 }
 
 /**
- * Project the selected durable session title into the browser title and
- * restore the shell's original product title when unmounted.
- * @param props - selected session title projection.
+ * Project active product and session identity into the browser title, restoring
+ * the pre-shell title on unmount.
+ * @param props - selected session and active product titles.
  * @returns no rendered content.
  */
-export function DocumentTitle({ title }: DocumentTitleProps): null {
+export function DocumentTitle({ title, productTitle }: DocumentTitleProps): null {
   const original = useRef(document.title)
   useEffect(() => {
-    document.title = title === undefined ? original.current : `${title} — ${original.current}`
+    document.title = title === undefined ? productTitle : `${title} — ${productTitle}`
     return () => { document.title = original.current }
-  }, [title])
+  }, [productTitle, title])
   return null
 }

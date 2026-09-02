@@ -5,24 +5,28 @@ import type {} from '@deepseek-ai/dsh-host-webserver'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { injectBootTheme } from './boot-theme.ts'
 import {
-  DEFAULT_PREFERENCE, THEME_SETTINGS_NAMESPACE, ThemeSettingsSchema,
-  type ThemePreference, type ThemeSettings,
+  DEFAULT_CUSTOM_PALETTE, DEFAULT_PALETTE_ID, DEFAULT_PREFERENCE,
+  THEME_SETTINGS_NAMESPACE, ThemeSettingsSchema, type CustomPalette, type ThemeSettings,
 } from './theme-settings.ts'
 
 export {
-  DEFAULT_PREFERENCE, THEME_PREFERENCE_FIELD, THEME_PREFERENCES, THEME_SETTINGS_NAMESPACE,
+  CUSTOM_PALETTE_FIELD, CUSTOM_PALETTE_ID, DEFAULT_CUSTOM_PALETTE, DEFAULT_PALETTE_ID,
+  DEFAULT_PREFERENCE, HEX_COLOR_PATTERN, SEMANTIC_COLOR_KEYS, SEMANTIC_TOKEN_MAP,
+  THEME_PALETTE_FIELD, THEME_PREFERENCE_FIELD, THEME_PREFERENCES, THEME_SETTINGS_NAMESPACE,
+  type CustomPalette, type SemanticColorKey, type SemanticColors, type ThemePaletteId,
   type ThemePreference, type ThemeSettings,
 } from './theme-settings.ts'
 
 const THEME_NAMESPACE = settingsNamespace(THEME_SETTINGS_NAMESPACE)
 
-/** Read the registered preference or use the schema default without a settings provider. */
-function readPreference(ctx: Context): ThemePreference {
-  const settings = ctx.get('settings')
-  if (settings === undefined) return DEFAULT_PREFERENCE
-  const section = settings.get(THEME_NAMESPACE) as ThemeSettings | undefined
-  if (section === undefined) return DEFAULT_PREFERENCE
-  return section.preference
+/** Read the registered section or use schema defaults without a settings provider. */
+function readThemeSettings(ctx: Context): ThemeSettings {
+  const section = ctx.get('settings')?.get(THEME_NAMESPACE) as ThemeSettings | undefined
+  return section ?? {
+    preference: DEFAULT_PREFERENCE,
+    palette: DEFAULT_PALETTE_ID,
+    customPalette: DEFAULT_CUSTOM_PALETTE as CustomPalette,
+  }
 }
 
 /**
@@ -36,7 +40,7 @@ export function apply(ctx: Context): void {
   })
   ctx.inject(['webServer'], (httpCtx) => {
     httpCtx.effect(
-      () => httpCtx.webServer.tapIndex(html => injectBootTheme(html, readPreference(ctx))),
+      () => httpCtx.webServer.tapIndex(html => injectBootTheme(html, readThemeSettings(ctx))),
       'client-ui-theme: initial theme bootstrap',
     )
   })

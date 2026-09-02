@@ -13,6 +13,7 @@ import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
 import { TestSessions, TestWorkspaces } from '@deepseek-ai/dsh-client-test-runtime'
 import type { Stabilizer } from '@deepseek-ai/dsh-client-test-runtime'
 import * as AppShell from '@deepseek-ai/dsh-client-web/src/app-shell.ts'
+import { apply as applyBranding } from '@deepseek-ai/dsh-client-branding/client'
 
 afterEach(cleanup)
 
@@ -25,6 +26,7 @@ async function bench() {
   ctx.provide('sessions', new TestSessions(stabilize, ctx))
   ctx.provide('workspaces', new TestWorkspaces(stabilize))
   ctx.provide('layout', { openDetails: vi.fn(), closeDetails: vi.fn() })
+  applyBranding(ctx)
   const fiber = ctx.plugin({ inject: [...AppShell.inject], apply: AppShell.apply })
   await fiber.await()
   return { ctx, slots, fiber }

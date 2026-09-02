@@ -9,6 +9,9 @@ import { AppearanceRow } from '../src/client/AppearanceRow.tsx'
 import type { AppearanceRowComponentProps } from '../src/client/AppearanceRow.tsx'
 import { createAppearanceRowStore } from '../src/client/settings-store.ts'
 import type { ThemePreference } from '../src/client/index.ts'
+import { DEFAULT_PALETTE_ID, type ThemePaletteId } from '../src/theme-settings.ts'
+
+const OCEAN_PALETTE_ID = 'ocean' as ThemePaletteId
 
 afterEach(cleanup)
 
@@ -17,6 +20,9 @@ const COPY: Record<string, string> = {
   'appearance.light': 'Light',
   'appearance.dark': 'Dark',
   'appearance.system': 'System',
+  'appearance.palette': 'Color scheme',
+  'appearance.palette.default': 'Default',
+  'appearance.palette.custom': 'Custom',
 }
 
 /** Empty global standard-kit hooks (the row reads neither). */
@@ -36,8 +42,9 @@ function emptyWorkspaces() {
 function mount(preference: ThemePreference = 'system') {
   // Real store instance — the sanctioned zero-machinery path for tests.
   const store = createAppearanceRowStore().create()
-  store.actions.sync(preference, 0)
+  store.actions.sync(preference, 0, DEFAULT_PALETTE_ID, [{ id: DEFAULT_PALETTE_ID, label: 'Default' }])
   const setTheme = vi.fn()
+  const setPalette = vi.fn()
   const props: AppearanceRowComponentProps = {
     useSessions: emptySessions(),
     useWorkspaces: emptyWorkspaces(),
@@ -45,9 +52,11 @@ function mount(preference: ThemePreference = 'system') {
     actions: store.actions,
     t: (key: string) => COPY[key] ?? key,
     setTheme,
+    setPalette,
+    renderSlot: (() => null) as AppearanceRowComponentProps['renderSlot'],
   }
   render(<AppearanceRow {...props} />)
-  return { store, setTheme }
+  return { store, setTheme, setPalette }
 }
 
 const pressed = (name: RegExp): string | null =>
@@ -71,5 +80,15 @@ describe('AppearanceRow', () => {
     act(() => { b.store.actions.sync('light', 1) })
     expect(pressed(/Light/)).toBe('true')
     expect(pressed(/Dark/)).toBe('false')
+  })
+
+  it('routes the orthogonal palette selector without changing the scheme', () => {
+    const b = mount('dark')
+    act(() => { b.store.actions.sync('dark', 1, DEFAULT_PALETTE_ID, [
+      { id: DEFAULT_PALETTE_ID, label: 'Default' }, { id: OCEAN_PALETTE_ID, label: 'Ocean' },
+    ]) })
+    fireEvent.change(screen.getByRole('combobox', { name: 'Color scheme' }), { target: { value: 'ocean' } })
+    expect(b.setPalette).toHaveBeenCalledWith('ocean')
+    expect(pressed(/Dark/)).toBe('true')
   })
 })

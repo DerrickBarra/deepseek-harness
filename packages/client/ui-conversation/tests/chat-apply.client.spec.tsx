@@ -51,6 +51,13 @@ function renderEntryOf(slots: Awaited<ReturnType<typeof bench>>['slots'], key: '
 }
 
 describe('apply wiring', () => {
+  it('declares only the services it uses', () => {
+    expect(inject).toEqual([
+      'slots', 'layout', 'sessions', 'workspaces', 'locale', 'connection', 'remote', 'settingsScope',
+      'conversationEvents', 'conversationViews', 'branding',
+    ])
+  })
+
   it('provides the conversation service', async () => {
     const b = await bench()
     expect(b.runtime.ctx.get('conversation')).toBeDefined()

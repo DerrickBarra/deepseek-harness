@@ -2,9 +2,9 @@
 
 [English](README.md) | 中文
 
-主题插件：基于 --dsw-* token 基础样式表（静态尺度 + 别名语义层）的 ThemeRuntime。该服务拥有实时主题偏好（`light`／`dark`／`system`），将 `system` 通过 `prefers-color-scheme` 解析为实际主题，并发布不可变的 `ThemeSnapshot`，通过 `theme/change` 事件通知变化；它绝不接触 DOM：ui-layout 的呈现器会应用解析后的快照（`html { color-scheme }`、`body[data-ds-dark-theme]`，以及主题的别名 token 内联变量）。通过 `/api` 信任栅栏的浏览器会先以 `system` 立即提供该服务，随后在后台加载 `ui-theme.preference`，并将每次内置主题选择通过 Host settings API 写入；其本地提供方默认将设置存入 `$DSH_HOME/settings.yaml`。收到推送的 settings 变更时或重连后，浏览器都会重新拉取该设置；连续快速选择会按操作顺序携带 namespace revision 串行写入，最新写入被拒时则重新加载持久化值。被拒绝的浏览器仅在进程内保留选择。已注册的第三方主题 id 仍是进程内扩展，不会跨越内置 settings schema；移除其中任意一个都绝不会覆盖最后一个持久化的内置偏好。该持久化边界由[Host settings 支撑的偏好决策](../../../.agents/notes/implemented/bug-fix/2026-08-06-host-backed-web-preferences.md)拥有。
+主题插件：基于 --dsw-* token 基础样式表（静态尺度 + 别名语义层）的 ThemeRuntime。服务拥有两个彼此独立的持久化轴：`light`／`dark`／`system` 选择明暗模式，品牌类型 `ThemePaletteId` 则选择成对的浅色／深色语义 token 覆盖。已注册配色方案是可撤销的浏览器贡献，但所选 id 独立持久化；注册消失时界面显示默认配色而不删除持久化 id，重新注册后会自动恢复。内置“自定义”配色为每个模式保存六个严格 `#RRGGBB` 语义值（强调色、应用背景、浮层表面、侧边栏、主要文字、次要文字），通过支持键盘导航的“浅色”和“深色”标签页编辑，并在切换标签页时保留成对草稿；预览、保存、重置与取消仍然可用，且不显示对比度警告。不可变 `ThemeSnapshot` 通过 `theme/change` 发布，ui-layout 将解析后的快照应用到 DOM。该持久化边界由[Host settings 支撑的偏好决策](../../../.agents/notes/implemented/bug-fix/2026-08-06-host-backed-web-preferences.md)拥有。
 
-当主机组合包含 HTTP 服务器时，主机侧紧接 `<body>` 起始标签注入同步引导代码。每份 index 响应会嵌入已注册的 Host 设置 `ui-theme.preference`，没有 settings provider 时则嵌入 `system`；浏览器按操作系统配色解析 `system`，随后在外壳加载页面渲染前设置 `color-scheme` 和 `body[data-ds-dark-theme]`。不含 HTTP 服务器的组合不受影响，插件树激活后，ThemeRuntime 与 ui-layout 仍分别是客户端状态和后续 DOM 更新的权威来源。
+当主机组合包含 HTTP 服务器时，主机侧紧接 `<body>` 起始标签注入同步引导代码。每份 index 响应会嵌入持久化明暗偏好、所选配色方案 id 与自定义值；浏览器先解析 `system`、选择基础 token 表，并在选择“自定义”时于外壳加载页渲染前应用其别名。仅存在于浏览器中的已注册配色方案在插件激活前显示默认配色。不含 HTTP 服务器的组合不受影响，激活后 ThemeRuntime 与 ui-layout 仍是权威来源。
 
 `src/styles/` 下有五张样式表，全部由 web 壳的 `base.css` 导入：`base.css`、`design-platform.css`、`scrollbar.css`、`gradient-shadow-text.css` 与 `shiki.css`。`scrollbar.css` 是 `--dsw-alias-scrollbar-*` token 的唯一消费方，必须排在声明这些 token 的 `design-platform.css` 之后。
 
@@ -22,5 +22,5 @@
 
 ## 已知限制与暂缓事项
 
-- **第三方主题是表层，不是产品**：注册主题意味着覆盖同名别名变量；目前不会验证一组覆盖是否完整。
+- **仅浏览器配色方案在引导阶段显示默认值**：Host 无法应用只存在于后续浏览器插件图中的注册，因此刷新时可能先显示默认配色，待该注册激活后再切换。
 - **token 样式表是颜色值的唯一权威来源**：会有意不补入 cssdesign 中缺失的值（例如设计中的 #4176E6 标签页蓝色）；一律采用最接近的语义 token。设计负责人批准的新增值是例外：须在同一变更中以一个静态尺度层级与一个语义别名的形式进入（`--dsw-static-blue-900` / `--dsw-alias-label-primary-bluish`）。

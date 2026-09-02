@@ -5,16 +5,28 @@
 // retracts everything the presenter wrote.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { ThemeSnapshot } from '@deepseek-ai/dsh-client-ui-theme/client'
+import type { ThemePaletteId, ThemeSnapshot } from '@deepseek-ai/dsh-client-ui-theme/client'
+import { DEFAULT_CUSTOM_PALETTE } from '@deepseek-ai/dsh-client-ui-theme/src/theme-settings.ts'
 import { DARK_ATTRIBUTE, ThemePresenter } from '@deepseek-ai/dsh-client-ui-layout/src/client/theme-presenter.ts'
 
 const LIGHT_THEME_COLOR = 'rgb(255, 255, 255)'
 const DARK_THEME_COLOR = 'rgb(21, 21, 23)'
+const DEFAULT_PALETTE_ID = 'default' as ThemePaletteId
 
 function snapshot(colorScheme: 'light' | 'dark', tokens: Record<string, string> = {}): ThemeSnapshot {
-  // The presenter must key off colorScheme, not the id — keep them distinct.
-  const active = { id: `${colorScheme}-test`, colorScheme, tokens }
-  return { preference: colorScheme, active, themes: [active], revision: 1 }
+  const active = { id: colorScheme, colorScheme, tokens }
+  const activePalette = { id: DEFAULT_PALETTE_ID, tokens: {} }
+  return {
+    preference: colorScheme,
+    active,
+    themes: [active],
+    palette: DEFAULT_PALETTE_ID,
+    palettes: [activePalette],
+    missingPalette: false,
+    activePalette,
+    customPalette: DEFAULT_CUSTOM_PALETTE,
+    revision: 1,
+  }
 }
 
 function clearThemePresentation(): void {
@@ -29,6 +41,7 @@ beforeEach(() => {
   clearThemePresentation()
   document.documentElement.style.removeProperty('color-scheme')
   document.body.removeAttribute(DARK_ATTRIBUTE)
+  document.body.removeAttribute('data-ds-theme-bootstrap-tokens')
   document.body.removeAttribute('style')
   const style = document.createElement('style')
   style.dataset.themePresenterTest = ''
@@ -63,6 +76,15 @@ describe('ThemePresenter', () => {
     expect(themeColorMeta()).toBe(meta)
     expect(meta?.content).toBe(LIGHT_THEME_COLOR)
     expect(document.head.querySelectorAll('meta[name="theme-color"]')).toHaveLength(1)
+  })
+
+  it('retracts Host bootstrap aliases before the first client snapshot', () => {
+    document.body.style.setProperty('--dsw-alias-bg-base', '#123456')
+    document.body.setAttribute('data-ds-theme-bootstrap-tokens', '--dsw-alias-bg-base')
+    const presenter = new ThemePresenter()
+    presenter.apply(snapshot('light'))
+    expect(document.body.style.getPropertyValue('--dsw-alias-bg-base')).toBe('')
+    expect(document.body.hasAttribute('data-ds-theme-bootstrap-tokens')).toBe(false)
   })
 
   it('applies tokens as inline variables and clears the previous set on theme change', () => {

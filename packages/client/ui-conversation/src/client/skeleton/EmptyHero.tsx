@@ -102,6 +102,10 @@ export function HeroGlow({ className }: { className?: string | undefined }) {
 export interface HeroShellProps {
   /** The owner's locale seat, passed down as a plain prop. */
   t: HeroTranslate
+  /** Active product display name used as custom-image alternative text. */
+  displayName: string
+  /** Custom product mark URL; omitted keeps the release-owned fish. */
+  iconUrl?: string
   /** Overlay content after the stack (modals). */
   children?: ReactNode
 }
@@ -112,14 +116,16 @@ export interface HeroShellProps {
  * @param props - see {@link HeroShellProps}.
  * @returns the centered hero element tree.
  */
-export function HeroShell({ t, children }: HeroShellProps) {
+export function HeroShell({ t, displayName, iconUrl, children }: HeroShellProps) {
   return (
     <div className={css.root}>
       <div className={css.stack}>
         <div className={css.headline}>
           {/* figma 34:10412: fish 34×25 leading the headline, gap 10. */}
           <span className={css.fishHitbox}>
-            <FishLogo size={34} className={css.fish} />
+            {iconUrl === undefined
+              ? <FishLogo size={34} className={css.fish} />
+              : <img src={iconUrl} className={css.customIcon} alt={displayName} />}
           </span>
           <span className={css.headlineText}>{t('hero.headline')}</span>
           <span className={css.previewBadge}>{t('hero.preview')}</span>

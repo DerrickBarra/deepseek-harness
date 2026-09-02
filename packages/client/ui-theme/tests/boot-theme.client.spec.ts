@@ -3,7 +3,10 @@
 import { runInNewContext } from 'node:vm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { injectBootTheme } from '../src/boot-theme.ts'
-import type { ThemePreference } from '../src/theme-settings.ts'
+import {
+  CUSTOM_PALETTE_ID, DEFAULT_CUSTOM_PALETTE, type ThemePaletteId,
+  type ThemePreference, type ThemeSettings,
+} from '../src/theme-settings.ts'
 
 const DARK_ATTRIBUTE = 'data-ds-dark-theme'
 
@@ -12,7 +15,7 @@ function mockSystemDark(matches: boolean): void {
 }
 
 function executeBootstrap(
-  preference?: ThemePreference,
+  preference?: ThemePreference | ThemeSettings,
   html = '<html><body><div id="root"></div><script type="module"></script></body></html>',
 ): string {
   const injected = injectBootTheme(html, preference)
@@ -27,6 +30,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   document.documentElement.style.removeProperty('color-scheme')
   document.body.removeAttribute(DARK_ATTRIBUTE)
+  document.body.removeAttribute('style')
 })
 
 describe('theme boot index transform', () => {
@@ -62,6 +66,26 @@ describe('theme boot index transform', () => {
     executeBootstrap()
     expect(document.documentElement.style.colorScheme).toBe('light')
     expect(document.body.hasAttribute(DARK_ATTRIBUTE)).toBe(false)
+  })
+
+  it('applies selected Custom aliases before plugin activation', () => {
+    mockSystemDark(true)
+    executeBootstrap({ preference: 'system', palette: CUSTOM_PALETTE_ID, customPalette: {
+      light: { ...DEFAULT_CUSTOM_PALETTE.light },
+      dark: { ...DEFAULT_CUSTOM_PALETTE.dark, background: '#123456' },
+    } })
+    expect(document.body.style.getPropertyValue('--dsw-alias-bg-base')).toBe('#123456')
+    expect(document.body.style.getPropertyValue('--dsw-specific-sidebar-fill')).toBe(DEFAULT_CUSTOM_PALETTE.dark.sidebar)
+  })
+
+  it('does not embed a durable missing palette id in executable HTML', () => {
+    const palette = '</script><script>globalThis.injected=true</script>' as ThemePaletteId
+    const html = injectBootTheme('<html><body></body></html>', {
+      preference: 'light',
+      palette,
+      customPalette: DEFAULT_CUSTOM_PALETTE,
+    })
+    expect(html).not.toContain(palette)
   })
 
   it('appends the script to a body-less fragment', () => {

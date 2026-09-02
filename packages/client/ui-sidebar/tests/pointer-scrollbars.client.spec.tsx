@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import type { SidebarRootComponentProps, SidebarSectionOwnerProps } from '../src/client/contract/slots.ts'
 import { SidebarRoot } from '../src/client/SidebarRoot.tsx'
+import type { BrandingSnapshot, BrandingSourceId } from '@deepseek-ai/dsh-client-branding/client'
 import { en } from '../src/client/locales.ts'
 
 /** Pinned column box; the shell compares pointer coordinates against it. */
@@ -18,6 +19,12 @@ const COLUMN_HEIGHT = 600
 const t: SidebarRootComponentProps['t'] = key => (en as Record<string, string>)[key] ?? key
 /** The shell never reads the global hooks; the props share carries them regardless. */
 const neverHook = (() => { throw new Error('shell must not read global hooks') }) as never
+const RELEASE_BRANDING: BrandingSnapshot = {
+  source: 'test:release-branding' as BrandingSourceId,
+  displayName: 'DeepSeek Harness',
+  productTitle: 'DeepSeek Harness',
+  revision: 0,
+}
 
 afterEach(() => {
   cleanup()
@@ -33,6 +40,7 @@ function mountColumn(): { column: HTMLElement; quiet: () => boolean } {
     <SidebarRoot
       collapsed={false} width={300}
       useSessions={neverHook} useWorkspaces={neverHook}
+      useBranding={selector => selector(RELEASE_BRANDING)}
       startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}
       renderSlot={((_key: string, owner: SidebarSectionOwnerProps) =>
         <div data-testid="region" data-wide={owner.wide} />) as SidebarRootComponentProps['renderSlot']}

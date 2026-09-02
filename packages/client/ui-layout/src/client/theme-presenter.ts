@@ -11,6 +11,7 @@ import type { ThemeSnapshot } from '@deepseek-ai/dsh-client-ui-theme/client'
 
 /** Body attribute selecting the dark base palette in the token stylesheets. */
 export const DARK_ATTRIBUTE = 'data-ds-dark-theme'
+const BOOTSTRAP_TOKENS_ATTRIBUTE = 'data-ds-theme-bootstrap-tokens'
 
 /** Applies theme snapshots to the document; one instance per plugin fiber. */
 export class ThemePresenter {
@@ -40,6 +41,7 @@ export class ThemePresenter {
     const body = document.body
     if (scheme === 'dark') body.setAttribute(DARK_ATTRIBUTE, '')
     else body.removeAttribute(DARK_ATTRIBUTE)
+    clearBootstrapTokens(body)
     for (const name of this.appliedTokens) body.style.removeProperty(name)
     this.appliedTokens = []
     for (const [name, value] of Object.entries(snapshot.active.tokens)) {
@@ -55,8 +57,16 @@ export class ThemePresenter {
     document.documentElement.style.removeProperty('color-scheme')
     const body = document.body
     body.removeAttribute(DARK_ATTRIBUTE)
+    clearBootstrapTokens(body)
     for (const name of this.appliedTokens) body.style.removeProperty(name)
     this.appliedTokens = []
     this.themeColorMeta.remove()
   }
+}
+
+function clearBootstrapTokens(body: HTMLElement): void {
+  const names = body.getAttribute(BOOTSTRAP_TOKENS_ATTRIBUTE)
+  if (names === null) return
+  for (const name of names.split(' ')) body.style.removeProperty(name)
+  body.removeAttribute(BOOTSTRAP_TOKENS_ATTRIBUTE)
 }

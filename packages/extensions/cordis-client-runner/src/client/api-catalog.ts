@@ -82,6 +82,25 @@ export interface TypeApiEntry {
 /** Every harness `ctx.<key>` service, sorted by key. */
 export const SERVICE_API: readonly ServiceApiEntry[] = [
   {
+    key: 'branding',
+    summary: 'React-free source-keyed browser identity registry.',
+    description: 'React-free source-keyed browser identity registry.',
+    methods: [
+      {
+        signature: 'getSnapshot(): BrandingSnapshot',
+        description: 'Read the active immutable identity.',
+        parameters: [],
+        returns: 'Stable snapshot reference until the registry changes.',
+      },
+      {
+        signature: 'register(source: BrandingSourceId, definition: BrandingDefinition): () => void',
+        description: 'Register or replace one source\'s identity.',
+        parameters: [{ name: 'source', description: 'Stable branded contribution owner.' }, { name: 'definition', description: 'Plain presentation data; markup and components are not accepted.' }],
+        returns: 'Disposer removing exactly this registration.',
+      },
+    ],
+  },
+  {
     key: 'layout',
     summary: 'The outward layout face (`ctx.layout`): the panel transitions other plugins may trigger — and exactly what a test fake must supply.',
     description: 'The outward layout face (`ctx.layout`): the panel transitions other plugins may trigger — and exactly what a test fake must supply. The attachPanels wiring hook stays on the concrete class (root-entry assembly only).',
@@ -231,8 +250,8 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   },
   {
     key: 'theme',
-    summary: 'Theme registry and preference owner.',
-    description: 'Theme registry and preference owner. `light`/`dark` are built in (the base stylesheets carry both palettes); third-party themes register alias-layer overrides. Reads go through getTheme; preference writes only through setTheme; continuous sync only through the `theme/change` event. overrideTokens stacks partial token layers over the active theme without touching the registry. The service holds the `prefers-color-scheme` media query (environment sensing, not presentation) and re-emits when the OS scheme flips while the preference is `system`.',
+    summary: 'Color-scheme preference and palette owner.',
+    description: 'Color-scheme preference and palette owner. `light`/`dark` are fixed bases and `system` resolves between them; third-party styling registers paired palettes or reversible alias-token override layers. Reads go through getTheme; color-scheme writes only through setTheme; continuous sync only through the `theme/change` event. The service holds the `prefers-color-scheme` media query (environment sensing, not presentation) and re-emits when the OS scheme flips while the preference is `system`.',
     methods: [
       {
         signature: 'getTheme(): ThemeSnapshot',
@@ -241,15 +260,20 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the current snapshot (stable reference until the next change).',
       },
       {
-        signature: 'setTheme(id: string): void',
-        description: 'Switch the theme preference — the only user preference write entry. Built-in preferences are written through the settings scope and every accepted value emits `theme/change`.',
-        parameters: [{ name: 'id', description: 'a registered theme id or `system`; unknown ids throw.' }],
+        signature: 'setTheme(id: ThemePreference): void',
+        description: 'Switch the fixed light/dark/system color-scheme preference.',
+        parameters: [{ name: 'id', description: 'built-in color-scheme preference; unknown runtime values throw.' }],
       },
       {
-        signature: 'register(definition: ThemeDefinition): () => void',
-        description: 'Register a theme. Duplicate id throws (single occupant per id; the built-in pair counts; `system` is a preference, not a registrable id).',
-        parameters: [{ name: 'definition', description: 'theme id, colorScheme, and alias-token overrides.' }],
-        returns: 'disposer. Disposing the theme backing the active preference resets the preference to the default so the UI never keeps tokens of an unregistered theme.',
+        signature: 'setPalette(id: ThemePaletteId): void',
+        description: 'Select a currently registered palette without changing light/dark/system.',
+        parameters: [{ name: 'id', description: 'registered palette id.' }],
+      },
+      {
+        signature: 'registerPalette(definition: PaletteDefinition): () => void',
+        description: 'Register an orthogonal paired palette.',
+        parameters: [{ name: 'definition', description: 'id, optional label, and light/dark token pairs.' }],
+        returns: 'disposer retaining a durable missing id when active.',
       },
       {
         signature: 'overrideTokens(source: string, tokens: ThemeTokenOverrides): () => void',
@@ -442,6 +466,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type BoundActions<H> = H extends StoreHandle<infer T, infer A> ? BakedActions<T, A> : never;',
   },
   {
+    name: 'BrandingDefinition',
+    declaration: 'export interface BrandingDefinition {\n    displayName: string;\n    productTitle: string;\n    iconUrl?: string;\n}',
+  },
+  {
+    name: 'BrandingSnapshot',
+    declaration: 'export interface BrandingSnapshot extends BrandingDefinition {\n    source: BrandingSourceId;\n    revision: number;\n}',
+  },
+  {
+    name: 'BrandingSourceId',
+    declaration: 'export type BrandingSourceId = Branded<\'BrandingSourceId\'>;',
+  },
+  {
     name: 'ChainKeysOf',
     declaration: 'export type ChainKeysOf<S extends keyof SlotMap & string> = S extends unknown ? (SlotMap[S][\'kind\'] extends \'chain\' ? S : never) : never;',
   },
@@ -542,6 +578,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ConversationViewSnapshotStore {\n    get<Target extends Extract<keyof ConversationViewSnapshotMap, string>>(target: Target): ConversationViewSnapshotMap[Target] | undefined;\n}',
   },
   {
+    name: 'CustomPalette',
+    declaration: 'export interface CustomPalette {\n    light: SemanticColors;\n    dark: SemanticColors;\n}',
+  },
+  {
     name: 'EntryKeyOf',
     declaration: 'export type EntryKeyOf<K extends keyof SlotMap & string> = SlotMap[K] extends {\n    kind: \'keyed\';\n    keyProps: infer P extends object;\n} ? keyof P & string : string;',
   },
@@ -634,6 +674,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type OwnerOf<K extends keyof SlotMap & string> = SlotMap[K] extends {\n    owner: infer O extends object;\n} ? O : object;',
   },
   {
+    name: 'PaletteDefinition',
+    declaration: 'export interface PaletteDefinition {\n    id: ThemePaletteId;\n    label?: string;\n    tokens: ThemeTokenOverrides;\n}',
+  },
+  {
     name: 'PartialAssistant',
     declaration: 'export interface PartialAssistant {\n    turn: number;\n    step: number;\n    blocks: readonly AssistantBlock[];\n}',
   },
@@ -696,6 +740,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ScopeOf',
     declaration: 'export type ScopeOf<K extends keyof SlotMap & string> = SlotMap[K][\'scope\'];',
+  },
+  {
+    name: 'SemanticColorKey',
+    declaration: 'export type SemanticColorKey = typeof SEMANTIC_COLOR_KEYS[number];',
+  },
+  {
+    name: 'SemanticColors',
+    declaration: 'export type SemanticColors = Record<SemanticColorKey, string>;',
   },
   {
     name: 'SessionAreaProps',
@@ -807,7 +859,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ThemeDefinition',
-    declaration: 'export interface ThemeDefinition {\n    id: string;\n    colorScheme: \'light\' | \'dark\';\n    tokens: ThemeTokens;\n}',
+    declaration: 'export interface ThemeDefinition {\n    id: Exclude<ThemePreference, \'system\'>;\n    colorScheme: \'light\' | \'dark\';\n    tokens: ThemeTokens;\n}',
+  },
+  {
+    name: 'ThemePaletteId',
+    declaration: 'export type ThemePaletteId = Branded<\'ThemePaletteId\'>;',
   },
   {
     name: 'ThemePreference',
@@ -815,7 +871,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ThemeSnapshot',
-    declaration: 'export interface ThemeSnapshot {\n    preference: ThemePreference;\n    active: ThemeDefinition;\n    themes: readonly ThemeDefinition[];\n    revision: number;\n}',
+    declaration: 'export interface ThemeSnapshot {\n    preference: ThemePreference;\n    active: ThemeDefinition;\n    themes: readonly ThemeDefinition[];\n    palette: ThemePaletteId;\n    palettes: readonly PaletteDefinition[];\n    missingPalette: boolean;\n    activePalette: PaletteDefinition;\n    customPalette: CustomPalette;\n    revision: number;\n}',
   },
   {
     name: 'ThemeTokenModes',

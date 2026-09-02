@@ -1,7 +1,7 @@
 /**
  * Browser theme registry over the `--dsw-*` token stylesheets. The service
- * owns the live theme preference (light/dark/system), resolves `system` through
- * `prefers-color-scheme`, and publishes immutable snapshots; it never touches
+ * owns the live color-scheme preference (light/dark/system), resolves `system`
+ * through `prefers-color-scheme`, and publishes immutable snapshots; it never touches
  * the DOM — ui-layout's presenter consumes the resolved snapshot. The Host
  * settings scope loads and stores the preference in the user-settings
  * document. The plugin also registers the Appearance preference row into the
@@ -17,17 +17,22 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type { AppearanceRowInjected } from './AppearanceRow.tsx'
 import { AppearanceRow } from './AppearanceRow.tsx'
+import { CustomPaletteEditor, type CustomPaletteEditorInjected } from './CustomPaletteEditor.tsx'
 import { createAppearanceRowStore } from './settings-store.ts'
 import { en, zh, type ThemeKey } from './locales.ts'
 import {
-  DEFAULT_PREFERENCE, isThemePreference, THEME_PREFERENCE_FIELD, THEME_SETTINGS_NAMESPACE,
-  type ThemePreference, type ThemeSettings,
+  CUSTOM_PALETTE_ID, DEFAULT_CUSTOM_PALETTE, DEFAULT_PALETTE_ID, DEFAULT_PREFERENCE,
+  isCustomPalette, isThemePreference, SEMANTIC_TOKEN_MAP, THEME_PALETTE_FIELD,
+  THEME_PREFERENCE_FIELD, THEME_SETTINGS_NAMESPACE,
+  type CustomPalette, type ThemePaletteId, type ThemePreference, type ThemeSettings,
 } from '../theme-settings.ts'
 
 export type { AppearanceRowComponentProps, AppearanceRowInjected } from './AppearanceRow.tsx'
 export type { AppearanceRowState } from './settings-store.ts'
 export type { ThemeKey } from './locales.ts'
-export type { ThemePreference, ThemeSettings } from '../theme-settings.ts'
+export type {
+  CustomPalette, SemanticColorKey, SemanticColors, ThemePaletteId, ThemePreference, ThemeSettings,
+} from '../theme-settings.ts'
 
 /** Namespace owning this feature's settings-row copy. */
 export const SETTINGS_NS = 'settings.theme'
@@ -57,10 +62,10 @@ export interface ThemeTokenModes {
 /** Override-layer dictionary: token names to per-mode value pairs. */
 export type ThemeTokenOverrides = Record<string, ThemeTokenModes>
 
-/** One selectable theme: id, dark/light semantics, and alias-token overrides. */
+/** One resolved built-in color scheme with composed alias-token overrides. */
 export interface ThemeDefinition {
-  /** Theme id (the setTheme argument for concrete themes). */
-  id: string
+  /** Resolved fixed color-scheme id. */
+  id: Exclude<ThemePreference, 'system'>
   /**
    * Which base palette this theme builds on. The presenter switches
    * `body[data-ds-dark-theme]` from this field — never from the id.
@@ -68,6 +73,16 @@ export interface ThemeDefinition {
   colorScheme: 'light' | 'dark'
   /** Alias-layer overrides applied as inline CSS variables over the base palette. */
   tokens: ThemeTokens
+}
+
+/** One orthogonal light/dark palette registration. */
+export interface PaletteDefinition {
+  /** Stable lowercase kebab-case id persisted independently of registration lifetime. */
+  id: ThemePaletteId
+  /** Optional user-facing label; settings falls back to the id. */
+  label?: string
+  /** Alias values for both color schemes. */
+  tokens: ThemeTokenOverrides
 }
 
 /** Immutable theme state published on every change. */
@@ -80,8 +95,18 @@ export interface ThemeSnapshot {
    * per-token; each value picked for the active color scheme).
    */
   active: ThemeDefinition
-  /** Registered themes in registration order. */
+  /** Built-in light and dark bases. */
   themes: readonly ThemeDefinition[]
+  /** Requested durable palette id, retained while its registration is absent. */
+  palette: ThemePaletteId
+  /** Registered palette definitions in registration order. */
+  palettes: readonly PaletteDefinition[]
+  /** Whether the requested palette currently falls back to Default. */
+  missingPalette: boolean
+  /** Active resolved palette definition. */
+  activePalette: PaletteDefinition
+  /** Current paired Custom values. */
+  customPalette: CustomPalette
   /** Monotonic change counter (registry or active changes). */
   revision: number
 }
@@ -120,6 +145,23 @@ const BUILTIN_THEMES: readonly ThemeDefinition[] = Object.freeze([
   Object.freeze({ id: 'dark', colorScheme: 'dark' as const, tokens: Object.freeze({}) }),
 ])
 
+const DEFAULT_PALETTE: PaletteDefinition = Object.freeze({
+  id: DEFAULT_PALETTE_ID,
+  label: 'Default',
+  tokens: Object.freeze({}),
+})
+
+function customPaletteDefinition(colors: CustomPalette): PaletteDefinition {
+  const tokens: ThemeTokenOverrides = {}
+  for (const [key, name] of Object.entries(SEMANTIC_TOKEN_MAP)) {
+    tokens[name] = Object.freeze({
+      light: colors.light[key as keyof CustomPalette['light']],
+      dark: colors.dark[key as keyof CustomPalette['dark']],
+    })
+  }
+  return Object.freeze({ id: CUSTOM_PALETTE_ID, label: 'Custom', tokens: Object.freeze(tokens) })
+}
+
 const BUILTIN_INSPECT_TOKENS: readonly ThemeTokenInspection[] = Object.freeze([
   { name: '--dsw-alias-bg-base', description: 'Application base background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-bg-base' },
   { name: '--dsw-alias-bg-layer-1', description: 'Primary raised surface background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-bg-layer-1' },
@@ -137,12 +179,11 @@ const BUILTIN_INSPECT_TOKENS: readonly ThemeTokenInspection[] = Object.freeze([
 ])
 
 /**
- * Theme registry and preference owner. `light`/`dark` are built in (the base
- * stylesheets carry both palettes); third-party themes register alias-layer
- * overrides. Reads go through {@link getTheme}; preference writes only
- * through {@link setTheme}; continuous sync only through the `theme/change`
- * event. {@link overrideTokens} stacks partial token layers over the active
- * theme without touching the registry.
+ * Color-scheme preference and palette owner. `light`/`dark` are fixed bases
+ * and `system` resolves between them; third-party styling registers paired
+ * palettes or reversible alias-token override layers. Reads go through
+ * {@link getTheme}; color-scheme writes only through {@link setTheme};
+ * continuous sync only through the `theme/change` event.
  * The service holds the `prefers-color-scheme` media query (environment
  * sensing, not presentation) and re-emits when the OS scheme flips while the
  * preference is `system`.
@@ -150,8 +191,11 @@ const BUILTIN_INSPECT_TOKENS: readonly ThemeTokenInspection[] = Object.freeze([
 export class ThemeRuntime {
   private readonly ctx: Context
   private readonly host: SettingsScope<ThemeSettings>
-  private themes: ThemeDefinition[] = [...BUILTIN_THEMES]
+  private readonly themes = BUILTIN_THEMES
   private preference: ThemePreference
+  private palette = DEFAULT_PALETTE_ID
+  private customPalette: CustomPalette = cloneCustomPalette(DEFAULT_CUSTOM_PALETTE)
+  private palettes: PaletteDefinition[] = [DEFAULT_PALETTE, customPaletteDefinition(this.customPalette)]
   private revision = 0
   private snapshot: ThemeSnapshot
   private readonly media: MediaQueryList | undefined
@@ -205,6 +249,11 @@ export class ThemeRuntime {
         if (!tokens.has(name)) tokens.set(name, dynamicToken(name))
       }
     }
+    for (const palette of this.palettes) {
+      for (const name of Object.keys(palette.tokens)) {
+        if (!tokens.has(name)) tokens.set(name, dynamicToken(name))
+      }
+    }
     for (const layer of this.overrides.values()) {
       for (const name of Object.keys(layer.tokens)) {
         if (!tokens.has(name)) tokens.set(name, dynamicToken(name))
@@ -214,52 +263,86 @@ export class ThemeRuntime {
   }
 
   /**
-   * Switch the theme preference — the only user preference write entry.
-   * Built-in preferences are written through the settings scope and every
-   * accepted value emits `theme/change`.
-   * @param id - a registered theme id or `system`; unknown ids throw.
+   * Switch the fixed light/dark/system color-scheme preference.
+   * @param id - built-in color-scheme preference; unknown runtime values throw.
    */
-  setTheme(id: string): void {
-    if (id !== 'system' && !this.themes.some(t => t.id === id)) {
-      throw new Error(`theme "${id}" is not registered`)
+  setTheme(id: ThemePreference): void {
+    if (!isThemePreference(id)) {
+      throw new Error(`theme preference "${String(id)}" must be light, dark, or system`)
     }
     if (this.preference === id) return
-    this.preference = id as ThemePreference
-    if (isThemePreference(id)) void this.host.set(THEME_PREFERENCE_FIELD, id)
-    this.publish()
-  }
-
-  /** Adopt the scope's accepted durable preference without writing it back. */
-  private adopt(): void {
-    const section = this.host.getSnapshot().value
-    if (section === undefined || this.preference === section.preference) return
-    this.preference = section.preference
+    this.preference = id
+    void this.host.set(THEME_PREFERENCE_FIELD, id)
     this.publish()
   }
 
   /**
-   * Register a theme. Duplicate id throws (single occupant per id; the
-   * built-in pair counts; `system` is a preference, not a registrable id).
-   * @param definition - theme id, colorScheme, and alias-token overrides.
-   * @returns disposer. Disposing the theme backing the active preference
-   * resets the preference to the default so the UI never keeps tokens of an
-   * unregistered theme.
+   * Select a currently registered palette without changing light/dark/system.
+   * @param id - registered palette id.
    */
-  register(definition: ThemeDefinition): () => void {
-    if (definition.id === 'system') throw new Error('"system" is a preference, not a registrable theme id')
-    if (this.themes.some(t => t.id === definition.id)) {
-      throw new Error(`theme "${definition.id}" is already registered`)
+  setPalette(id: ThemePaletteId): void {
+    if (!this.palettes.some(palette => palette.id === id)) {
+      throw new Error(`palette "${id}" is not registered`)
     }
-    this.themes = [...this.themes, definition]
+    if (this.palette === id) return
+    this.palette = id
+    void this.host.set(THEME_PALETTE_FIELD, id)
+    this.publish()
+  }
+
+  /**
+   * Register an orthogonal paired palette.
+   * @param definition - id, optional label, and light/dark token pairs.
+   * @returns disposer retaining a durable missing id when active.
+   */
+  registerPalette(definition: PaletteDefinition): () => void {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(definition.id)) {
+      throw new TypeError(`palette id "${definition.id}" must be lowercase kebab-case`)
+    }
+    if (this.palettes.some(palette => palette.id === definition.id)) {
+      throw new Error(`palette "${definition.id}" is already registered`)
+    }
+    const entry = freezePalette(definition)
+    this.palettes = [...this.palettes, entry]
     this.publish()
     return () => {
-      if (!this.themes.some(t => t.id === definition.id)) return
-      this.themes = this.themes.filter(t => t.id !== definition.id)
-      if (this.preference === definition.id) {
-        this.preference = DEFAULT_PREFERENCE
-      }
+      if (!this.palettes.includes(entry)) return
+      this.palettes = this.palettes.filter(palette => palette !== entry)
       this.publish()
     }
+  }
+
+  /**
+   * Persist one complete Custom palette and verify Host read-back.
+   * @param colors - complete strict-hex semantic values.
+   * @returns whether the accepted settings snapshot equals the requested values.
+   */
+  async saveCustomPalette(colors: CustomPalette): Promise<boolean> {
+    if (!isCustomPalette(colors)) throw new TypeError('custom palette must contain strict #RRGGBB values')
+    const copy = cloneCustomPalette(colors)
+    await this.host.set('customPalette', copy)
+    const accepted = this.host.getSnapshot().value?.customPalette
+    return accepted !== undefined && JSON.stringify(accepted) === JSON.stringify(copy)
+  }
+
+  /** Adopt accepted durable values without writing them back. */
+  private adopt(): void {
+    const section = this.host.getSnapshot().value
+    if (section === undefined) return
+    const nextCustom = isCustomPalette(section.customPalette)
+      ? cloneCustomPalette(section.customPalette)
+      : this.customPalette
+    const nextPalette = section.palette
+    const changed = this.preference !== section.preference || this.palette !== nextPalette
+      || JSON.stringify(nextCustom) !== JSON.stringify(this.customPalette)
+    if (!changed) return
+    this.preference = section.preference
+    this.palette = nextPalette
+    this.customPalette = nextCustom
+    this.palettes = this.palettes.map(palette => palette.id === CUSTOM_PALETTE_ID
+      ? customPaletteDefinition(this.customPalette)
+      : palette)
+    this.publish()
   }
 
   /**
@@ -293,15 +376,20 @@ export class ThemeRuntime {
     const resolvedId = this.preference === 'system'
       ? (this.media?.matches === true ? 'dark' : 'light')
       : this.preference
-    // Both built-ins always exist; a registered preference id resolves or has
-    // been reset by its disposer, so the lookup cannot miss.
+    // Both fixed bases always exist and every accepted preference resolves to one.
     const active = this.themes.find(t => t.id === resolvedId)
     /* v8 ignore next 2 -- needs a registry without light/dark, which register()/dispose() cannot produce */
     if (active === undefined) throw new Error(`theme registry lost "${resolvedId}"`)
+    const activePalette = this.palettes.find(palette => palette.id === this.palette) ?? DEFAULT_PALETTE
     return Object.freeze({
       preference: this.preference,
-      active: this.composeActive(active),
+      active: this.composeActive(active, activePalette),
       themes: Object.freeze([...this.themes]),
+      palette: this.palette,
+      palettes: Object.freeze([...this.palettes]),
+      missingPalette: activePalette.id !== this.palette,
+      activePalette,
+      customPalette: this.customPalette,
       revision: this.revision,
     })
   }
@@ -312,9 +400,12 @@ export class ThemeRuntime {
    * presenter consumes the composed snapshot and needs no override awareness).
    * Without layers the registered definition passes through by identity.
    */
-  private composeActive(active: ThemeDefinition): ThemeDefinition {
-    if (this.overrides.size === 0) return active
+  private composeActive(active: ThemeDefinition, palette: PaletteDefinition): ThemeDefinition {
+    if (Object.keys(palette.tokens).length === 0 && this.overrides.size === 0) return active
     const tokens: ThemeTokens = { ...active.tokens }
+    for (const [name, modes] of Object.entries(palette.tokens)) {
+      tokens[name] = modes[active.colorScheme]
+    }
     for (const layer of [...this.overrides.values()].sort((a, b) => a.seq - b.seq)) {
       for (const [name, modes] of Object.entries(layer.tokens)) {
         tokens[name] = modes[active.colorScheme]
@@ -328,6 +419,21 @@ export class ThemeRuntime {
     this.snapshot = this.buildSnapshot()
     this.ctx.emit('theme/change', this.snapshot)
   }
+}
+
+function cloneCustomPalette(colors: Readonly<CustomPalette>): CustomPalette {
+  return Object.freeze({
+    light: Object.freeze({ ...colors.light }),
+    dark: Object.freeze({ ...colors.dark }),
+  }) as CustomPalette
+}
+
+function freezePalette(definition: PaletteDefinition): PaletteDefinition {
+  return Object.freeze({
+    id: definition.id,
+    ...(definition.label === undefined ? {} : { label: definition.label }),
+    tokens: Object.freeze(validateOverrides(`palette:${definition.id}`, definition.tokens)),
+  })
 }
 
 /**
@@ -353,7 +459,7 @@ function validateOverrides(source: string, tokens: ThemeTokenOverrides): ThemeTo
       )
     }
     const modes = value as ThemeTokenModes
-    validated[name] = { light: modes.light, dark: modes.dark }
+    validated[name] = Object.freeze({ light: modes.light, dark: modes.dark })
   }
   return validated
 }
@@ -391,7 +497,14 @@ export function apply(ctx: ClientContext): void {
   const store = createAppearanceRowStore()
   let bound: BoundActions<typeof store> | undefined
   const sync = (snapshot: ThemeSnapshot): void => {
-    bound?.sync(snapshot.preference, snapshot.revision)
+    bound?.sync(
+      snapshot.preference,
+      snapshot.revision,
+      snapshot.palette,
+      snapshot.palettes.map(palette => ({ id: palette.id, label: palette.label ?? palette.id })),
+      snapshot.missingPalette,
+      snapshot.customPalette,
+    )
   }
   ctx.on('theme/change', sync)
   const injected = (actions: BoundActions<typeof store>): AppearanceRowInjected => {
@@ -401,14 +514,41 @@ export function apply(ctx: ClientContext): void {
     sync(theme.getTheme())
     return {
       setTheme: (id) => { theme.setTheme(id) },
+      setPalette: (id) => { theme.setPalette(id) },
     }
   }
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
     name: 'settings.general.item',
     id: 'appearance',
     order: 10,
+    children: {
+      'settings.appearance.item': { kind: 'list', scope: 'root' },
+    },
     store,
     locale: SETTINGS_NS,
     inject: injected,
   }, AppearanceRow))
+
+  let disposePreview: (() => void) | undefined
+  const cancelPreview = (): void => {
+    disposePreview?.()
+    disposePreview = undefined
+  }
+  const customInjected = (): CustomPaletteEditorInjected => ({
+    preview: (colors) => {
+      cancelPreview()
+      disposePreview = theme.overrideTokens('ui-theme:custom-preview', customPaletteDefinition(colors).tokens)
+    },
+    save: async colors => theme.saveCustomPalette(colors),
+    cancelPreview,
+  })
+  ctx.effect(() => () => { cancelPreview() }, 'ui-theme: custom preview cleanup')
+  ctx.slots.inject('settings.appearance.item', () => ctx.slots.register({
+    name: 'settings.appearance.item',
+    id: 'custom-palette',
+    order: 10,
+    store,
+    locale: SETTINGS_NS,
+    inject: customInjected,
+  }, CustomPaletteEditor))
 }

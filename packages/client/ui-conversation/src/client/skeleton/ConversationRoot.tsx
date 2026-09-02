@@ -14,8 +14,9 @@ export type ConversationRootProps = ConversationSlotProps
 
 export function ConversationRoot({
   sessionId, useSession, useSessions, useWorkspaces, useInput, useComposerBlock,
-  renderSlot, renderSlotChain, selectWorkspace, t,
+  renderSlot, renderSlotChain, selectWorkspace, t, useBranding,
 }: ConversationRootProps) {
+  const branding = useBranding(value => value)
   const openState = useSession(s => s.openState)
   const composerPhase = useSession(s => s.composerPhase)
   const pending = useSession(s => s.pending) ?? []
@@ -159,7 +160,13 @@ export function ConversationRoot({
   const composerBar = (
     <div className={clsx(css.composerStack, hero && css.composerHero)}>
       {hero && <HeroGlow className={css.heroGlow} />}
-      {hero && <HeroShell t={t} />}
+      {hero && (
+        <HeroShell
+          t={t}
+          displayName={branding.displayName}
+          {...branding.iconUrl === undefined ? {} : { iconUrl: branding.iconUrl }}
+        />
+      )}
       {hero && heroWorkspaceRow}
       {zone !== undefined && renderSlot('conversation.input.dock', zone)}
       {inputBar}

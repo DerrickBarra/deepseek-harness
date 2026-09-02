@@ -11,6 +11,7 @@ import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-web-react'
 import { DocumentTitle } from './DocumentTitle.tsx'
 // Type-only: pulls the runtime's SlotMap declaration merge (the 'root' key) into this program.
 import type {} from '@deepseek-ai/dsh-client-runtime/client'
+import type {} from '@deepseek-ai/dsh-client-branding/client'
 
 /** Assembly inputs: the active app-shell plugin ctx (slots/sessions/layout services provided). */
 export interface AssemblyDeps {
@@ -28,12 +29,14 @@ export function buildRenderApp(deps: AssemblyDeps): () => ReactNode {
   const sessions = ctx.get('sessions')
   if (sessions === undefined) throw new Error('shell assembly: sessions service unavailable')
   const useSessions = bindSnapshotSelector(sessions.list)
+  const useBranding = bindSnapshotSelector(ctx.branding)
   const SessionDocumentTitle = (): ReactNode => {
+    const productTitle = useBranding(state => state.productTitle)
     const title = useSessions((state) => {
       const id = state.current
       return id === undefined ? undefined : state.byId[id]?.title
     })
-    return <DocumentTitle {...title === undefined ? {} : { title }} />
+    return <DocumentTitle productTitle={productTitle} {...title === undefined ? {} : { title }} />
   }
   return () => (
     <>

@@ -48,7 +48,9 @@ export function SidebarRoot({
   toggleSidebar,
   t,
   renderSlot,
+  useBranding,
 }: SidebarRootComponentProps) {
+  const branding = useBranding(value => value)
   // Wide content stays mounted while the collapse animates (fading via
   // .collapsed .wide), unmounts at settle, and remounts right away on expand.
   const [settled, setSettled] = useState(collapsed)
@@ -137,7 +139,14 @@ export function SidebarRoot({
             aria-label={t('session.new.label')}
             onClick={() => { startSession() }}
           >
-            <BrandWordmark />
+            {branding.iconUrl === undefined
+              ? <BrandWordmark />
+              : (
+                <span className={css.customBrand}>
+                  <img src={branding.iconUrl} alt="" />
+                  <span>{branding.displayName}</span>
+                </span>
+              )}
           </button>
         )}
         {/* Rail resting state is the whale mark; hovering swaps in the panel
@@ -149,7 +158,9 @@ export function SidebarRoot({
             aria-label={collapsed ? t('toggle.open') : t('toggle.collapse')}
             onClick={() => { toggleSidebar() }}
           >
-            {!wide && <FishLogo className={css.railFish} size={24} />}
+            {!wide && (branding.iconUrl === undefined
+              ? <FishLogo className={css.railFish} size={24} />
+              : <img className={clsx(css.railFish, css.customRailIcon)} src={branding.iconUrl} alt="" />)}
             {/* Rail icons render at 18 (figma rail spec); expanded keeps the glyph-native sizes. */}
             <IconPanelLeftOutline16 className={css.panelIcon} size={wide ? 16 : 18} />
           </button>

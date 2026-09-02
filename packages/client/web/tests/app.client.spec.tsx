@@ -9,6 +9,7 @@ import { cleanup, render } from '@testing-library/react'
 import { Context } from '@deepseek-ai/cordis'
 import { SlotTestRuntime } from '@deepseek-ai/dsh-client-test-runtime'
 import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { BrandingSourceId } from '@deepseek-ai/dsh-client-branding/client'
 import { buildRenderApp } from '@deepseek-ai/dsh-client-web/src/app.tsx'
 
 let runtime: SlotTestRuntime | undefined
@@ -22,6 +23,9 @@ afterEach(async () => {
 
 async function bench() {
   runtime = await SlotTestRuntime.create()
+  if (document.title !== '') {
+    runtime.ctx.branding.register('test:web-title' as BrandingSourceId, { displayName: document.title, productTitle: document.title })
+  }
   await runtime.root.declare({}, () => <div data-testid="frame" />)
   return { runtime, renderApp: buildRenderApp({ ctx: runtime.ctx }) }
 }

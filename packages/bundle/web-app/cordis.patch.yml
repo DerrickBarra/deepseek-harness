@@ -168,6 +168,9 @@
     - id: client-runtime
       name: '@deepseek-ai/dsh-client-runtime'
 
+    - id: branding
+      name: '@deepseek-ai/dsh-client-branding'
+
     - id: cordis-client-runner
       name: '@deepseek-ai/dsh-cordis-client-runner'
 

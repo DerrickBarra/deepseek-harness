@@ -18,6 +18,9 @@
       "path": "../../../vendor/cordis"
     },
     {
+      "path": "../branding"
+    },
+    {
       "path": "../ui-slots"
     },
     {

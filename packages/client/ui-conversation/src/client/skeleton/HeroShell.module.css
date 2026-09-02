@@ -70,6 +70,12 @@
   justify-content: center;
 }
 
+.customIcon {
+  width: 34px;
+  height: 25px;
+  object-fit: contain;
+}
+
 /* Keep the hero mark in the same primary ink as its headline. */
 .fish {
   color: var(--dsw-alias-label-primary);

@@ -13,6 +13,7 @@ import type {
 } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConversationRootProps } from '../src/client/skeleton/ConversationRoot.tsx'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { BrandingSourceId } from '@deepseek-ai/dsh-client-branding/client'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import { en as commonEn } from '@deepseek-ai/dsh-client-locale/src/locales/en.ts'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
@@ -242,6 +243,10 @@ function mount(
     useWorkspaces: bindSnapshotSelector(workspaces),
     useProjection: (() => undefined),
     useComposerBlock: select => select(options.composerBlock),
+    useBranding: selector => selector({
+      source: 'test:release-branding' as BrandingSourceId,
+      displayName: 'DeepSeek Harness', productTitle: 'DeepSeek Harness', revision: 0,
+    }),
     useInput,
     inputActions,
     renderSlot,
@@ -259,9 +264,14 @@ function mount(
 
 describe('Hero chrome', () => {
   it('renders the English preview badge through the hero locale seat', () => {
-    const view = render(<HeroShell t={makeTranslate(en, commonEn)} />)
+    const view = render(<HeroShell t={makeTranslate(en, commonEn)} displayName="DeepSeek Harness" />)
     expect(view.getByText('Into the Unknown')).toBeTruthy()
     expect(view.getByText('Preview')).toBeTruthy()
+  })
+
+  it('renders custom branding as plain image data instead of the release fish', () => {
+    const view = render(<HeroShell t={makeTranslate(en, commonEn)} displayName="Byte" iconUrl="/byte.png" />)
+    expect((view.getByRole('img', { name: 'Byte' }) as HTMLImageElement).src).toContain('/byte.png')
   })
 })
 

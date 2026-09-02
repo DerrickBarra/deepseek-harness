@@ -26,6 +26,7 @@ import {
   ConversationEventRegistry, ConversationViewRegistry, SlotRegistry,
 } from '@deepseek-ai/dsh-client-runtime/client'
 import { createSlotRenderer } from '@deepseek-ai/dsh-client-web-react'
+import { apply as applyBranding } from '@deepseek-ai/dsh-client-branding/client'
 import type {
   ChildrenDecl, ComposedProps, OwnerOf, SlotComponent, SlotMap, SlotRendererHost, StoreInstanceLike,
 } from '@deepseek-ai/dsh-client-ui-slots'
@@ -203,6 +204,7 @@ export class SlotTestRuntime {
     this.workspaces = new TestWorkspaces(this.stabilizer)
     ctx.provide('sessions', this.sessions)
     ctx.provide('workspaces', this.workspaces)
+    applyBranding(ctx)
     // Capturing install: the production renderer does the rendering; the
     // wrapper only takes the host face for storeOf (no machinery copied).
     const renderer = createSlotRenderer()

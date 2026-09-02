@@ -1,38 +1,53 @@
-/**
- * Host-rendered theme bootstrap for the browser's pre-plugin interval. Each
- * index response embeds the current durable built-in preference; the browser
- * resolves only `system`, then writes the same DOM fields ui-layout's
- * ThemePresenter owns after the client plugin tree activates.
- */
+/** Host-rendered palette bootstrap for the browser's pre-plugin interval. */
 
-import { DEFAULT_PREFERENCE, type ThemePreference } from './theme-settings.ts'
+import {
+  CUSTOM_PALETTE_ID, DEFAULT_CUSTOM_PALETTE, DEFAULT_PALETTE_ID, DEFAULT_PREFERENCE,
+  SEMANTIC_TOKEN_MAP, type CustomPalette, type ThemePreference, type ThemeSettings,
+} from './theme-settings.ts'
 
-/** Build the inline script for one schema-validated built-in preference. */
-function bootThemeScript(preference: ThemePreference): string {
+function normalize(input: ThemePreference | ThemeSettings): ThemeSettings {
+  return typeof input === 'string'
+    ? { preference: input, palette: DEFAULT_PALETTE_ID, customPalette: DEFAULT_CUSTOM_PALETTE as CustomPalette }
+    : input
+}
+
+/** Build the inline script for one schema-validated durable section. */
+function bootThemeScript(settings: ThemeSettings): string {
+  const customTokens = Object.fromEntries(
+    Object.entries(SEMANTIC_TOKEN_MAP).map(([key, token]) => [token, {
+      light: settings.customPalette.light[key as keyof CustomPalette['light']],
+      dark: settings.customPalette.dark[key as keyof CustomPalette['dark']],
+    }]),
+  )
   return `<script>(() => {
-  const preference = ${JSON.stringify(preference)}
+  const preference = ${JSON.stringify(settings.preference)}
   const systemDark = preference === 'system'
     && typeof matchMedia !== 'undefined'
     && matchMedia('(prefers-color-scheme: dark)').matches
   const dark = preference === 'dark' || systemDark
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
   document.body.toggleAttribute('data-ds-dark-theme', dark)
+  if (${JSON.stringify(settings.palette === CUSTOM_PALETTE_ID)}) {
+    const tokens = ${JSON.stringify(customTokens)}
+    document.body.setAttribute('data-ds-theme-bootstrap-tokens', Object.keys(tokens).join(' '))
+    for (const [name, modes] of Object.entries(tokens)) {
+      document.body.style.setProperty(name, modes[dark ? 'dark' : 'light'])
+    }
+  }
 })()</script>`
 }
 
 /**
- * Insert the theme bootstrap immediately after the opening body tag, before
- * the shell mount and module script. Body-less fragments receive it at the
- * end, where the HTML parser has already synthesized a body.
+ * Insert the theme bootstrap immediately after the opening body tag.
  * @param html - Raw application index HTML.
- * @param preference - Current Host-backed built-in preference.
+ * @param settings - Current Host-backed section or a preference for compatibility with callers.
  * @returns HTML containing the theme bootstrap.
  */
 export function injectBootTheme(
   html: string,
-  preference: ThemePreference = DEFAULT_PREFERENCE,
+  settings: ThemePreference | ThemeSettings = DEFAULT_PREFERENCE,
 ): string {
-  const script = bootThemeScript(preference)
+  const script = bootThemeScript(normalize(settings))
   const body = /<body(?:\s[^>]*)?>/i.exec(html)
   if (body === null) return `${html}${script}`
   const at = body.index + body[0].length

@@ -1,35 +1,60 @@
-/**
- * Appearance row slot store: a mirror of the theme service snapshot. The
- * plugin's apply-world change listener is the only writer; the row component
- * reads via props.useStore.
- */
+/** Appearance row mirror of the theme service snapshot. */
 import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ThemePreference } from '../theme-settings.ts'
+import {
+  DEFAULT_CUSTOM_PALETTE, DEFAULT_PALETTE_ID,
+  type CustomPalette, type ThemePaletteId, type ThemePreference,
+} from '../theme-settings.ts'
+
+/** Selectable palette summary kept JSON-compatible for the component. */
+export interface PaletteOption {
+  id: ThemePaletteId
+  label: string
+}
 
 /** Store state mirrored from the theme snapshot. */
 export interface AppearanceRowState {
-  /** Persisted preference (selection state reads this, never the resolved active theme). */
   preference: ThemePreference
-  /** Service revision; -1 until first sync so revision 0 lands as a change. */
+  palette: ThemePaletteId
+  palettes: readonly PaletteOption[]
+  missingPalette: boolean
+  customPalette: CustomPalette
   revision: number
 }
 
-/** Declared action shape giving the exported factory a stable return type. */
 type AppearanceRowActions = {
-  sync: (draft: AppearanceRowState, preference: ThemePreference, revision: number) => void
+  sync: (
+    draft: AppearanceRowState,
+    preference: ThemePreference,
+    revision: number,
+    palette?: ThemePaletteId,
+    palettes?: readonly PaletteOption[],
+    missingPalette?: boolean,
+    customPalette?: CustomPalette,
+  ) => void
 }
 
 /**
- * Declares the Appearance row state and write surface.
+ * Declare the Appearance row state and write surface.
  * @returns the store handle.
  */
 export function createAppearanceRowStore(): EngineStoreHandle<AppearanceRowState, AppearanceRowActions> {
   return defineStore({
-    init: (): AppearanceRowState => ({ preference: 'system', revision: -1 }),
+    init: (): AppearanceRowState => ({
+      preference: 'system', palette: DEFAULT_PALETTE_ID, palettes: [], missingPalette: false,
+      customPalette: { light: { ...DEFAULT_CUSTOM_PALETTE.light }, dark: { ...DEFAULT_CUSTOM_PALETTE.dark } },
+      revision: -1,
+    }),
     actions: {
-      sync: (d, preference: ThemePreference, revision: number) => {
+      sync: (
+        d, preference, revision, palette = DEFAULT_PALETTE_ID, palettes = [], missingPalette = false,
+        customPalette = DEFAULT_CUSTOM_PALETTE as CustomPalette,
+      ) => {
         if (revision <= d.revision) return
         d.preference = preference
+        d.palette = palette
+        d.palettes = [...palettes]
+        d.missingPalette = missingPalette
+        d.customPalette = { light: { ...customPalette.light }, dark: { ...customPalette.dark } }
         d.revision = revision
       },
     },

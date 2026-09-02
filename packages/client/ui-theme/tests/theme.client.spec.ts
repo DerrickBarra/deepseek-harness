@@ -8,6 +8,11 @@ import type {
   ThemeTokenOverrides,
 } from '@deepseek-ai/dsh-client-ui-theme/client'
 import { ThemeRuntime } from '@deepseek-ai/dsh-client-ui-theme/client'
+import {
+  DEFAULT_CUSTOM_PALETTE, DEFAULT_PALETTE_ID, type ThemePaletteId,
+} from '../src/theme-settings.ts'
+
+const paletteId = (value: string): ThemePaletteId => value as ThemePaletteId
 
 const make = (host = stubSettingsScope<ThemeSettings>()): {
   ctx: Context
@@ -50,59 +55,31 @@ describe('ThemeRuntime', () => {
 
   it('adopts a published Host section without writing it back', () => {
     const { theme, events, host } = make()
-    host.publish({ status: 'ready', value: { preference: 'dark' }, revision: 1, writable: true })
+    host.publish({ status: 'ready', value: { preference: 'dark', palette: DEFAULT_PALETTE_ID, customPalette: DEFAULT_CUSTOM_PALETTE }, revision: 1, writable: true })
     expect(theme.getTheme().preference).toBe('dark')
     expect(events).toHaveLength(1)
     expect(host.set).not.toHaveBeenCalled()
-    host.publish({ value: { preference: 'dark' }, revision: 2 })
+    host.publish({ value: { preference: 'dark', palette: DEFAULT_PALETTE_ID, customPalette: DEFAULT_CUSTOM_PALETTE }, revision: 2 })
     expect(events).toHaveLength(1)
   })
 
   it('adopts a section already standing at construction', () => {
     const host = stubSettingsScope<ThemeSettings>()
-    host.publish({ status: 'ready', value: { preference: 'dark' }, revision: 1, writable: true })
+    host.publish({ status: 'ready', value: { preference: 'dark', palette: DEFAULT_PALETTE_ID, customPalette: DEFAULT_CUSTOM_PALETTE }, revision: 1, writable: true })
     const { theme } = make(host)
     expect(theme.getTheme().preference).toBe('dark')
   })
 
-  it('throws on unknown setTheme ids, duplicate registration, and the system id', () => {
+  it('rejects runtime values outside light, dark, and system', () => {
     const { theme } = make()
-    expect(() => { theme.setTheme('sepia') }).toThrow('not registered')
-    expect(() => theme.register({ id: 'light', colorScheme: 'light', tokens: {} })).toThrow('already registered')
-    expect(() => theme.register({ id: 'system', colorScheme: 'light', tokens: {} })).toThrow('preference')
+    expect(() => { theme.setTheme('sepia' as never) }).toThrow('must be light, dark, or system')
   })
 
-  it('registered themes join the snapshot; disposing the active one resets to default', () => {
-    const { theme, events, host } = make()
-    const dispose = theme.register({ id: 'sepia', colorScheme: 'light', tokens: { '--dsw-alias-bg-base': 'red' } })
-    expect(theme.getTheme().themes.map(t => t.id)).toEqual(['light', 'dark', 'sepia'])
-    theme.setTheme('sepia')
-    expect(theme.getTheme().active.tokens['--dsw-alias-bg-base']).toBe('red')
-    dispose()
-    expect(theme.getTheme().preference).toBe('system')
-    expect(theme.getTheme().themes.map(t => t.id)).toEqual(['light', 'dark'])
-    // Custom ids are in-process extension themes; only the built-in product
-    // preferences cross the Host settings schema.
-    expect(host.set).not.toHaveBeenCalled()
-    // register + set + dispose = three publishes; disposer is idempotent.
-    expect(events.length).toBe(3)
-    dispose()
-    expect(events.length).toBe(3)
-  })
-
-  it('disposing an inactive theme keeps the active preference', () => {
-    const { theme } = make()
-    const dispose = theme.register({ id: 'sepia', colorScheme: 'light', tokens: {} })
-    theme.setTheme('dark')
-    dispose()
-    expect(theme.getTheme().preference).toBe('dark')
-  })
-
-  it('revision increases monotonically across every publish', () => {
+  it('revision increases monotonically across preference and palette publishes', () => {
     const { theme, events } = make()
     theme.setTheme('dark')
     theme.setTheme('light')
-    const dispose = theme.register({ id: 'sepia', colorScheme: 'dark', tokens: {} })
+    const dispose = theme.registerPalette({ id: paletteId('sepia'), tokens: {} })
     dispose()
     expect(events.map(e => e.revision)).toEqual([1, 2, 3, 4])
   })
@@ -153,12 +130,11 @@ describe('ThemeRuntime', () => {
 
   it('exports sorted built-in, registered, and override-only token descriptions as copies', () => {
     const { theme } = make()
-    theme.register({
-      id: 'custom',
-      colorScheme: 'light',
+    theme.registerPalette({
+      id: paletteId('catalog'),
       tokens: {
-        '--dsw-alias-bg-base': 'duplicate-built-in',
-        '--registered': 'registered',
+        '--dsw-alias-bg-base': { light: 'duplicate-built-in', dark: 'duplicate-built-in' },
+        '--registered': { light: 'registered', dark: 'registered' },
       },
     })
     theme.overrideTokens('package', {

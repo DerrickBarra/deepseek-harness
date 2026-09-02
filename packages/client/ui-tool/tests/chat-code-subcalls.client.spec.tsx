@@ -22,6 +22,7 @@ import type {
 } from '@deepseek-ai/dsh-client-runtime/client'
 import { createSlotRenderer } from '@deepseek-ai/dsh-client-web-react'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
+import { apply as applyBranding } from '@deepseek-ai/dsh-client-branding/client'
 import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import { apply as applyConversation, inject as injectConversation } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { apply as applyTool, inject as injectTool } from '../src/client/apply.ts'
@@ -162,6 +163,7 @@ async function bench(snapshot: ConversationSnapshot) {
   // ui-theme's Appearance row binds a durable scope through these two.
   ctx.provide('remote', { $on: () => () => {} } as never)
   ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
+  applyBranding(ctx)
   const locale = new LocaleRuntime(ctx)
   ctx.provide('locale', locale)
   slots.installLocale(locale)

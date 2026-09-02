@@ -9,8 +9,10 @@ import clsx from 'clsx'
 import {
   IconDarkOutline16, IconFollowsystemOutline16, IconLightOutline16,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ThemePreference } from '../theme-settings.ts'
+import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
+import {
+  CUSTOM_PALETTE_ID, DEFAULT_PALETTE_ID, type ThemePaletteId, type ThemePreference,
+} from '../theme-settings.ts'
 import type { ThemeKey } from './locales.ts'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { createAppearanceRowStore } from './settings-store.ts'
@@ -18,13 +20,16 @@ import css from './AppearanceRow.module.css'
 
 /** Injected business face: the preference write (t rides the standard locale seat). */
 export interface AppearanceRowInjected {
-  /** Switch the theme preference. */
+  /** Switch the color-scheme preference. */
   setTheme: (id: ThemePreference) => void
+  /** Select one registered orthogonal palette. */
+  setPalette: (id: ThemePaletteId) => void
 }
 
 /** Full component props: runtime share + store share + locale seat + injected face. */
 export type AppearanceRowComponentProps =
-  PropsRuntime<'settings.general.item'> & PropsStore<ReturnType<typeof createAppearanceRowStore>>
+  PropsRuntime<'settings.general.item'> & PropsRenderSlots<'settings.appearance.item'>
+  & PropsStore<ReturnType<typeof createAppearanceRowStore>>
   & PropsLocale<'settings.theme'> & AppearanceRowInjected
 
 /** Cube order and icons (figma 501:30015-30017: Light, Dark, System). */
@@ -39,8 +44,11 @@ const CUBES: readonly { id: ThemePreference; labelKey: ThemeKey; Icon: typeof Ic
  * @param props - composed slot props.
  * @returns the row element tree.
  */
-export function AppearanceRow({ t, setTheme, useStore }: AppearanceRowComponentProps) {
+export function AppearanceRow({ t, setTheme, setPalette, useStore, renderSlot }: AppearanceRowComponentProps) {
   const preference = useStore(s => s.preference)
+  const palette = useStore(s => s.palette)
+  const palettes = useStore(s => s.palettes)
+  const missingPalette = useStore(s => s.missingPalette)
   return (
     <div className={css.group}>
       <div className={css.title}>{t('appearance.title')}</div>
@@ -58,6 +66,21 @@ export function AppearanceRow({ t, setTheme, useStore }: AppearanceRowComponentP
           </button>
         ))}
       </div>
+      <label className={css.paletteLabel}>
+        <span>{t('appearance.palette')}</span>
+        <select
+          value={missingPalette ? DEFAULT_PALETTE_ID : palette}
+          onChange={(event) => { setPalette(event.currentTarget.value as ThemePaletteId) }}
+        >
+          {palettes.map(option => (
+            <option key={option.id} value={option.id}>
+              {option.id === DEFAULT_PALETTE_ID ? t('appearance.palette.default')
+                : option.id === CUSTOM_PALETTE_ID ? t('appearance.palette.custom') : option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {renderSlot('settings.appearance.item', {})}
     </div>
   )
 }

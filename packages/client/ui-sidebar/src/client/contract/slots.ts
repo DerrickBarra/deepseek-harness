@@ -7,7 +7,9 @@
  * `sidebar.settings` registrant's (ui-settings), followed by optional footer
  * actions in `sidebar.footer.action`.
  */
-import type { PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { BrandingSnapshot } from '@deepseek-ai/dsh-client-branding/client'
+import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls ui-layout's SlotMap merge (the 'sidebar' entry) into every
 // program that sees this contract, so PropsRuntime<'sidebar'> resolves.
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
@@ -76,6 +78,8 @@ export type SidebarRootInjected = {
   startSession: (workspaceId?: WorkspaceId) => void
   /** Toggle the sidebar column through the layout service. */
   toggleSidebar: () => void
+  /** Framework-bound active product identity. */
+  hooks: { branding: ObservableSnapshot<BrandingSnapshot> }
 }
 
 /**
@@ -86,4 +90,4 @@ export type SidebarRootInjected = {
 export type SidebarRootComponentProps =
   PropsRuntime<'sidebar'>
   & PropsRenderSlots<'sidebar.workspaces' | 'sidebar.settings' | 'sidebar.footer.action'>
-  & SidebarRootInjected & PropsLocale<'sidebar'>
+  & InjectFace<SidebarRootInjected> & PropsLocale<'sidebar'>

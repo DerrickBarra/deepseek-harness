@@ -6,6 +6,7 @@ import type {
   SidebarSettingsOwnerProps,
 } from '../src/client/contract/slots.ts'
 import { SidebarRoot } from '../src/client/SidebarRoot.tsx'
+import type { BrandingSnapshot, BrandingSourceId } from '@deepseek-ai/dsh-client-branding/client'
 import { en } from '../src/client/locales.ts'
 
 // English-dictionary translate stub: the shell renders the same copy the
@@ -20,8 +21,22 @@ afterEach(() => {
 // The shell never reads the global hooks itself, but they ride the standard
 // props share; stub them as never-called functions.
 const neverHook = (() => { throw new Error('shell must not read global hooks') }) as never
+const RELEASE_BRANDING: BrandingSnapshot = {
+  source: 'test:release-branding' as BrandingSourceId,
+  displayName: 'DeepSeek Harness',
+  productTitle: 'DeepSeek Harness',
+  revision: 0,
+}
 
-function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; width?: number } = {}) {
+function mountShell({
+  collapsed = false,
+  width = 300,
+  branding = RELEASE_BRANDING,
+}: {
+  collapsed?: boolean
+  width?: number
+  branding?: BrandingSnapshot
+} = {}) {
   const startSession = vi.fn()
   const toggleSidebar = vi.fn()
   let regionOwner: SidebarSectionOwnerProps | undefined
@@ -32,6 +47,7 @@ function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; w
     <SidebarRoot
       collapsed={current.collapsed} width={current.width}
       useSessions={neverHook} useWorkspaces={neverHook}
+      useBranding={((selector: (value: typeof branding) => unknown) => selector(branding)) as SidebarRootComponentProps['useBranding']}
       startSession={startSession} toggleSidebar={toggleSidebar} t={t}
       renderSlot={((
         key: string,
@@ -115,5 +131,15 @@ describe('SidebarRoot shell', () => {
     const b = mountShell({ collapsed: true })
     expect(b.regionOwner().wide).toBe(false)
     expect(screen.getByRole('button', { name: 'Open sidebar' })).toBeTruthy()
+  })
+
+  it('renders a custom image and display name while preserving release defaults otherwise', () => {
+    mountShell({ branding: {
+      source: 'test:byte' as BrandingSourceId,
+      displayName: 'Byte', productTitle: 'Byte', iconUrl: '/byte.png', revision: 1,
+    } })
+    expect(screen.getByText('Byte')).toBeTruthy()
+    const image = document.querySelector<HTMLImageElement>('img[src="/byte.png"]')
+    expect(image).not.toBeNull()
   })
 })

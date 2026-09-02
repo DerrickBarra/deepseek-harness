@@ -86,8 +86,16 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * layer and every registrant already depends on it for `ctx.settingsScope`.
      */
     'settings.general.item': { kind: 'list'; scope: 'root'; owner: SettingsGeneralItemOwnerProps }
+    /** Extensions rendered inside the Appearance row below its built-in controls. */
+    'settings.appearance.item': { kind: 'list'; scope: 'root'; owner: SettingsAppearanceItemOwnerProps }
   }
 }
+/** Owner share of an Appearance extension (the row supplies nothing). */
+export interface SettingsAppearanceItemOwnerProps {
+  /** Marker field: extension owner props are intentionally empty. */
+  children?: never
+}
+
 /** Owner share of a General preference row (the section supplies nothing). */
 export interface SettingsGeneralItemOwnerProps {
   /** Marker field: item owner props are intentionally empty. */

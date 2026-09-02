@@ -124,6 +124,23 @@
   cursor: pointer;
 }
 
+.customBrand {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.customBrand img,
+.customRailIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
 .iconButton {
   flex: none;
   display: inline-flex;
