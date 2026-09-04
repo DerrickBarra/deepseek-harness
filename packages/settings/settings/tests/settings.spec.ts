@@ -154,11 +154,14 @@ describe('registration', () => {
   it('describes registered namespaces with schema JSON, value, and applies', async () => {
     const { ctx } = await boot()
     ctx.settings.register(settingsNamespace('ui-theme'), ThemeSchema)
-    ctx.settings.register(settingsNamespace('workspace'), NestedSchema, { applies: 'restart' })
+    ctx.settings.register(settingsNamespace('workspace'), NestedSchema, {
+      applies: 'restart',
+      exposure: 'web',
+    })
     const descriptors = ctx.settings.describe()
-    expect(descriptors.map(entry => [entry.ns, entry.applies])).toEqual([
-      ['ui-theme', 'live'],
-      ['workspace', 'restart'],
+    expect(descriptors.map(entry => [entry.ns, entry.applies, entry.exposure])).toEqual([
+      ['ui-theme', 'live', undefined],
+      ['workspace', 'restart', 'web'],
     ])
     expect(descriptors[0]!.value).toEqual({ theme: 'dark', fontSize: 14 })
     // schemastery's canonical wire form: a { uid, refs } envelope whose root ref

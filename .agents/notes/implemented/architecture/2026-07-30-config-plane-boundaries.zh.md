@@ -20,7 +20,7 @@ Status: implemented
 
 **读取配置与写入配置同样属于特权操作。**`settings.describe` 与 `credentials.describe` 使用和配置写入相同的 `/api` trusted-host 栅栏，因此 loopback 与已声明的 `trustedHosts` 拥有同一组获准访问能力，未声明的非 loopback authority 会被拒绝。模型目录（`llm.providers`、`llm.models`）携带提供方 id、显示名与模型列表——没有端点、没有密钥状态——并继续属于这项共享 DSH API 可达性决策。这条边界由一台真实 HTTP 服务器来断言，而不是手工拼装的请求，因为真正决定它的，是浏览器实际发出的那个 `Host` 头。
 
-**这个面恰好服务于已注册模型提供方所指向的那些 namespace。**`ctx.llm.listConfigurableProviders()` 就是允许列表，于是产品边界是被执行的，而不是从今天的插件集合里推断出来的；将来的 namespace 只有加入该目录才会变得可在 Web 上配置。未注册的 namespace 与未暴露的 namespace 得到完全相同的答复（`settings-not-exposed`），因此探测无法枚举注册表。
+**这个面服务于被明确 owner 策略准入的 namespace。**`ctx.llm.listConfigurableProviders()` 准入已注册模型提供方的 namespace，网关保留封闭的产品／Web allowlist，而 `settings.register(..., { exposure: 'web' })` 允许非 LLM namespace 的 owner 选择加入同一个受信任配置客户端。省略 `exposure` 时仍默认拒绝，网关也不会把这项注册 metadata 发到 wire 上。未注册的 namespace 与未暴露的 namespace 得到完全相同的答复（`settings-not-exposed`），因此探测无法枚举注册表。
 
 **持有局部视图的调用方，点名它真正要改的字段。**`SettingsProvider.mutate(ns, ops)` 会把 `set`/`unset` 路径 op 施加在写入排到队首那一刻的分节上。客户端通过对比自己打开时的快照与草稿来构造 op，因此它只提及自己看得见的字段：两侧都没有的机密不会产生任何 op，它的留存是构造使然，而非小心使然。`replace` 仍是那个刻意的整体重置。
 
@@ -31,11 +31,11 @@ Status: implemented
 ## 曾考虑的替代方案
 
 - **在代理配置上做部署声明式的 namespace 白名单**——更通用，但它把产品边界交给了写 cordis.yml 的人，而空的默认值会让已交付的页面在每个部署显式开启之前直接失效。提供方目录本就精确地说明了哪些 namespace 属于模型配置。
-- **在 `settings.register()` 处 opt-in metadata**——语义最正（由 namespace 的属主自行声明其暴露与否），改动也最大：seam 的公共接口、两个 LLM（大语言模型）插件，以及它们的文档。记录为：一旦某个非 LLM 的 namespace 确实需要这个面，就采用这个形状。
+- **用注册 metadata 取代所有既有策略**——机制会更统一，但可配置模型提供方与产品 namespace 已有权威目录或封闭 allowlist。注册 metadata 只为非 LLM owner 补充这些策略，而不强迫无关方迁移。
 - **区分「未注册」与「已注册但未暴露」**——诊断更好，同时也是一台 namespace 枚举预言机。统一答复是刻意为之。
 - **用 diff 而非 revision 来检测冲突**——对整分节写入而言，拿提交时的基线与存储比对是可行的，但编辑器持有的是**脱敏后**的分节：它给不出可比对的基线，这与它不能安全地 `replace` 是同一个原因。计数器两者都不需要。
 - **在这里就修掉脱敏的缺口**——`redactSecrets` 只遍历 `object`/`dict`/`array`，因此藏在 union、intersection 或 transform 之后的机密会被原样返回，且 `secrets` 列表为空；`schema.toJSON()` 会带上 secret 字段的 `.default(...)`；写入拒绝的消息返回的是可能引用了输入的 schema 文本；客户端通过 schemastery 的 `new Function` 重建信封；而 pi-ai 那个纯字符串的 `headers` 字典完全可以合法地放下 `Authorization`。全部真实存在，也全部刻意留给一个 fail-closed 的 `describeForWire()`——它会拒绝自己无法证明安全的 schema。它们被记录为 `TODO(settings-wire-redaction)` 以及各属主 README 的 Known Limitations，而不是在这里做一半。
 
 ## 影响
 
-位于 loopback 与 `trustedHosts` 之外的浏览器无法渲染 Host-backed 设置页；已声明的 trusted host 可以渲染与 loopback 相同的配置表层，而这种可达性仍不同于认证。注册了 settings namespace 的插件，在它同时注册可配置提供方之前不会变得可在 Web 上配置——这是刻意的，也正是 `settings-not-exposed` 要在消息里点明这条边界的原因。`SettingsDescriptor` 新增了必填的 `revision`，因此以编程方式构造 descriptor 形状值的地方都必须提供它；`settings/document-updated` 是一个新事件，提供方侧的任何 listener 现在都可以观察它。忽略 `expectedRevision` 的客户端，其后写胜出的语义完全不变。延后事项：fail-closed 的协议 describe（连同它所承载的 `headers` 与信封净化工作），以及一套不含可执行代码的浏览器 schema 协议。
+位于 loopback 与 `trustedHosts` 之外的浏览器无法渲染 Host-backed 设置页；已声明的 trusted host 可以渲染与 loopback 相同的配置表层，而这种可达性仍不同于认证。插件注册默认保持私有，只有其 namespace 被提供方／产品策略准入，或 owner 声明 `exposure: 'web'` 时，才可在 Web 上配置；`settings-not-exposed` 点明这条边界，但不泄露命中了哪种情况。exposure 标记是同进程 descriptor metadata，而不是 wire 字段，也不会绕过 secret 脱敏或提供方的只读策略。`SettingsDescriptor` 带有必填的 `revision`，`settings/document-updated` 让提供方侧 listener 能观察原始层移动。忽略 `expectedRevision` 的客户端，其后写胜出的语义完全不变。延后事项：fail-closed 的协议 describe（连同它所承载的 `headers` 与信封净化工作），以及一套不含可执行代码的浏览器 schema 协议。

@@ -33,12 +33,17 @@ export function settingsNamespace(value: string): SettingsNamespace {
 /** When a namespace's changes take effect for its owner. */
 export type SettingsApplies = 'live' | 'restart'
 
+/** Optional configuration client authorized by the namespace owner. */
+export type SettingsExposure = 'web'
+
 /** Registration options beyond the namespace schema. */
 export interface SettingsRegisterOptions<T> {
   /** Composition-layer values resolved below the user layer (entry-config subset). */
   base?: Partial<T>
   /** Owner's effect timing, surfaced to configuration UIs; defaults to `live`. */
   applies?: SettingsApplies
+  /** Configuration client allowed to describe and mutate this namespace; omitted is private. */
+  exposure?: SettingsExposure
   /**
    * Reject a resolved section the owner could not act on, for constraints its
    * schema cannot express — a cross-field requirement, or one field's validity
@@ -85,6 +90,8 @@ export interface SettingsDescriptor {
   user?: unknown
   /** Owner's declared effect timing. */
   applies: SettingsApplies
+  /** Owner-declared configuration client exposure; absent registrations remain private. */
+  exposure?: SettingsExposure
   /** Schema-declared secret positions; present only under `redactSecrets`. */
   secrets?: RedactedSecret[]
 }
@@ -326,6 +333,7 @@ interface SettingsRegistration {
   schema: z<unknown>
   base: unknown
   applies: SettingsApplies
+  exposure?: SettingsExposure
   /** Owner-supplied check for constraints the schema cannot express. */
   validate?: (value: unknown) => void
   resolved: unknown
@@ -429,7 +437,7 @@ export abstract class SettingsProvider extends Service {
    * registration itself — the earliest point where the schema can judge it.
    * @param ns - unique namespace; duplicate registration fails loud.
    * @param schema - schemastery schema resolving this namespace's value.
-   * @param options - composition `base` layer and effect timing.
+   * @param options - composition `base`, effect timing, optional Web exposure, and owner validation.
    * @returns the owner scope for reads, observation, and updates.
    */
   register<T>(ns: SettingsNamespace, schema: z<T>, options?: SettingsRegisterOptions<T>): SettingsScope<T> {
@@ -441,6 +449,7 @@ export abstract class SettingsProvider extends Service {
       schema: schema as z<unknown>,
       base: options?.base,
       applies: options?.applies ?? 'live',
+      ...options?.exposure === undefined ? {} : { exposure: options.exposure },
       ...options?.validate === undefined
         ? {}
         : { validate: options.validate as (value: unknown) => void },
@@ -497,6 +506,7 @@ export abstract class SettingsProvider extends Service {
         ...base === undefined ? {} : { base },
         ...detachedUser === undefined ? {} : { user: detachedUser },
         applies: registration.applies,
+        ...registration.exposure === undefined ? {} : { exposure: registration.exposure },
       }
       if (options?.redactSecrets !== true) return descriptor
       const schema = registration.schema as z<never>

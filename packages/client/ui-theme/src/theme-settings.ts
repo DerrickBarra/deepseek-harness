@@ -127,6 +127,7 @@ export function isCustomPalette(value: unknown): value is CustomPalette {
 /**
  * Reject theme settings that contain unknown fields or unsupported persisted values.
  * @param value Candidate resolved settings section.
+ * @returns Assertion that the value is a complete supported theme section.
  */
 export function validateThemeSettings(value: unknown): asserts value is ThemeSettings {
   if (!hasExactKeys(value, THEME_SETTINGS_KEYS)
