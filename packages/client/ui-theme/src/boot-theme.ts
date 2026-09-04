@@ -7,7 +7,7 @@ import {
 
 function normalize(input: ThemePreference | ThemeSettings): ThemeSettings {
   return typeof input === 'string'
-    ? { preference: input, palette: DEFAULT_PALETTE_ID, customPalette: DEFAULT_CUSTOM_PALETTE as CustomPalette }
+    ? { preference: input, palette: DEFAULT_PALETTE_ID, customPalette: DEFAULT_CUSTOM_PALETTE }
     : input
 }
 

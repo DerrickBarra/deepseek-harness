@@ -425,7 +425,7 @@ function cloneCustomPalette(colors: Readonly<CustomPalette>): CustomPalette {
   return Object.freeze({
     light: Object.freeze({ ...colors.light }),
     dark: Object.freeze({ ...colors.dark }),
-  }) as CustomPalette
+  })
 }
 
 function freezePalette(definition: PaletteDefinition): PaletteDefinition {

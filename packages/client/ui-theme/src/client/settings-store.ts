@@ -47,7 +47,7 @@ export function createAppearanceRowStore(): EngineStoreHandle<AppearanceRowState
     actions: {
       sync: (
         d, preference, revision, palette = DEFAULT_PALETTE_ID, palettes = [], missingPalette = false,
-        customPalette = DEFAULT_CUSTOM_PALETTE as CustomPalette,
+        customPalette = DEFAULT_CUSTOM_PALETTE,
       ) => {
         if (revision <= d.revision) return
         d.preference = preference

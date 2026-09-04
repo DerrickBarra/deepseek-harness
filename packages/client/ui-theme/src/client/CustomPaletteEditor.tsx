@@ -5,7 +5,6 @@ import {
   CUSTOM_PALETTE_ID, DEFAULT_CUSTOM_PALETTE, HEX_COLOR_PATTERN, SEMANTIC_COLOR_KEYS,
   type CustomPalette, type SemanticColorKey,
 } from '../theme-settings.ts'
-import type { ThemeKey } from './locales.ts'
 import type { createAppearanceRowStore } from './settings-store.ts'
 import css from './CustomPaletteEditor.module.css'
 
@@ -114,7 +113,7 @@ export function CustomPaletteEditor({ t, useStore, preview, save, cancelPreview 
             onClick={() => { activateMode(mode, false) }}
             onKeyDown={(event) => { onTabKeyDown(event, mode) }}
           >
-            {t(`custom.${mode}` as ThemeKey)}
+            {t(`custom.${mode}`)}
           </button>
         ))}
       </div>
@@ -128,17 +127,17 @@ export function CustomPaletteEditor({ t, useStore, preview, save, cancelPreview 
           hidden={activeMode !== mode}
         >
           <fieldset>
-            <legend>{t(`custom.${mode}` as ThemeKey)}</legend>
+            <legend>{t(`custom.${mode}`)}</legend>
             {SEMANTIC_COLOR_KEYS.map(key => (
               <label key={key}>
-                <span>{t(`custom.${key}` as ThemeKey)}</span>
+                <span>{t(`custom.${key}`)}</span>
                 <input
                   type="color"
                   value={HEX_COLOR_PATTERN.test(draft[mode][key]) ? draft[mode][key] : '#000000'}
                   onChange={(event) => { edit(mode, key, event.currentTarget.value) }}
                 />
                 <input
-                  aria-label={`${t(`custom.${mode}` as ThemeKey)} ${t(`custom.${key}` as ThemeKey)}`}
+                  aria-label={`${t(`custom.${mode}`)} ${t(`custom.${key}`)}`}
                   pattern="#[0-9A-Fa-f]{6}"
                   maxLength={7}
                   value={draft[mode][key]}
