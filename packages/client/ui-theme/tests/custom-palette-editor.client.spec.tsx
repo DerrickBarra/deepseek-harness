@@ -20,7 +20,7 @@ function mount(save = vi.fn(async () => true)) {
   store.actions.sync('system', 0, CUSTOM_PALETTE_ID, [
     { id: DEFAULT_PALETTE_ID, label: 'Default' }, { id: CUSTOM_PALETTE_ID, label: 'Custom' },
   ])
-  const preview = vi.fn()
+  const preview = vi.fn<CustomPaletteEditorProps['preview']>()
   const cancelPreview = vi.fn()
   const props: CustomPaletteEditorProps = {
     useSessions: neverHook,
@@ -52,15 +52,14 @@ describe('CustomPaletteEditor', () => {
     expect(screen.queryByRole('textbox', { name: 'Dark Accent' })).toBeNull()
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Light Accent' }), { target: { value: '#123456' } })
-    expect(fixture.preview).toHaveBeenLastCalledWith(expect.objectContaining({
-      light: expect.objectContaining({ accent: '#123456' }),
-      dark: DEFAULT_CUSTOM_PALETTE.dark,
-    }))
+    const preview = fixture.preview.mock.lastCall?.[0]
+    expect(preview?.light.accent).toBe('#123456')
+    expect(preview?.dark).toEqual(DEFAULT_CUSTOM_PALETTE.dark)
     fireEvent.click(dark)
     expect(dark.getAttribute('aria-selected')).toBe('true')
     expect(panels[0]!.hasAttribute('hidden')).toBe(true)
     expect(panels[1]!.hasAttribute('hidden')).toBe(false)
-    expect((screen.getByRole('textbox', { name: 'Dark Accent' }) as HTMLInputElement).value)
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Dark Accent' }).value)
       .toBe(DEFAULT_CUSTOM_PALETTE.dark.accent)
     expect(screen.queryByRole('textbox', { name: 'Light Accent' })).toBeNull()
 
@@ -80,7 +79,7 @@ describe('CustomPaletteEditor', () => {
     fireEvent.keyDown(dark, { key: 'ArrowRight' })
     expect(light.getAttribute('aria-selected')).toBe('true')
     expect(document.activeElement).toBe(light)
-    expect((screen.getByRole('textbox', { name: 'Light Accent' }) as HTMLInputElement).value).toBe('#123456')
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Light Accent' }).value).toBe('#123456')
   })
 
   it('keeps invalid text visible, withholds preview, and disables Save', () => {
@@ -89,21 +88,19 @@ describe('CustomPaletteEditor', () => {
     fireEvent.change(input, { target: { value: '#12' } })
     expect((input as HTMLInputElement).value).toBe('#12')
     expect(fixture.preview).not.toHaveBeenCalled()
-    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Save' }).disabled).toBe(true)
   })
 
   it('previews native-picker edits and supports Reset and Cancel', () => {
     const fixture = mount()
     const pickers = document.querySelectorAll<HTMLInputElement>('input[type="color"]')
     fireEvent.change(pickers[0]!, { target: { value: '#123456' } })
-    expect(fixture.preview).toHaveBeenLastCalledWith(expect.objectContaining({
-      light: expect.objectContaining({ accent: '#123456' }),
-    }))
+    expect(fixture.preview.mock.lastCall?.[0].light.accent).toBe('#123456')
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
     expect(fixture.preview).toHaveBeenLastCalledWith(DEFAULT_CUSTOM_PALETTE)
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(fixture.cancelPreview).toHaveBeenCalled()
-    expect((screen.getByRole('textbox', { name: 'Light Accent' }) as HTMLInputElement).value).toBe(DEFAULT_CUSTOM_PALETTE.light.accent)
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Light Accent' }).value).toBe(DEFAULT_CUSTOM_PALETTE.light.accent)
   })
 
   it('keeps a rejected draft and clears an accepted save', async () => {
@@ -142,11 +139,11 @@ describe('CustomPaletteEditor', () => {
     const external = clone(DEFAULT_CUSTOM_PALETTE)
     external.light.accent = '#ABCDEF'
     act(() => { fixture.store.actions.sync('system', 1, CUSTOM_PALETTE_ID, [{ id: CUSTOM_PALETTE_ID, label: 'Custom' }], false, external) })
-    expect((screen.getByRole('textbox', { name: 'Light Accent' }) as HTMLInputElement).value).toBe('#ABCDEF')
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Light Accent' }).value).toBe('#ABCDEF')
     fireEvent.change(screen.getByRole('textbox', { name: 'Light Accent' }), { target: { value: '#123456' } })
     const later = clone(external)
     later.light.accent = '#FEDCBA'
     act(() => { fixture.store.actions.sync('system', 2, CUSTOM_PALETTE_ID, [{ id: CUSTOM_PALETTE_ID, label: 'Custom' }], false, later) })
-    expect((screen.getByRole('textbox', { name: 'Light Accent' }) as HTMLInputElement).value).toBe('#123456')
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Light Accent' }).value).toBe('#123456')
   })
 })
