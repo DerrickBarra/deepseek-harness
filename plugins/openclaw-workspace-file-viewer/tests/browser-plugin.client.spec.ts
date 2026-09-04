@@ -3,6 +3,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import InvariantRegistry from '@deepseek-ai/dsh-invariants'
 import { SlotRegistry, type SessionId, type WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ChatFileMentions } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
 import { apply as applyLocale, inject as localeInject } from '@deepseek-ai/dsh-client-locale/client'
 import { closeWorkspaceFileViewer, type WorkspaceFileViewerInjected } from '../src/client/WorkspaceFileViewerPanel.tsx'
@@ -257,7 +258,7 @@ describe('ui-workspace-file-viewer browser half', () => {
   it('composes chat file mentions with an existing provider without replacing produced-file mentions', async () => {
     const producedOpen = vi.fn()
     const produced = {
-      forClosing: vi.fn(() => ({
+      forClosing: vi.fn<ChatFileMentions['forClosing']>((_owner) => ({
         resolve: (value: string) => value === 'produced.txt'
           ? { open: producedOpen, label: 'Open produced.txt', title: 'produced.txt' }
           : undefined,
