@@ -15,6 +15,15 @@ function invoke(args: string[]) {
   })
 }
 
+function checkedOutShortCommit(): string {
+  const result = spawnSync('git', ['rev-parse', '--short=10', 'HEAD'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+  })
+  if (result.status !== 0) throw new Error(result.stderr)
+  return result.stdout.trim()
+}
+
 describe('publish-npm-baseline', () => {
   it('keeps stable baseline identities unchanged', () => {
     expect(createBaselineIdentity('0.1.0', '20260904153045', '5fc9d6c37a')).toEqual({
@@ -57,7 +66,9 @@ describe('publish-npm-baseline', () => {
 
     const allowed = invoke(['pack', '--allow-prerelease-base'])
     expect(allowed.status).toBe(1)
-    expect(allowed.stdout).toMatch(/version:\s+0\.1\.0-rc\.5\.\d{14}\.5fc9d6c37a/u)
+    expect(allowed.stdout).toMatch(
+      new RegExp(`version:\\s+0\\.1\\.0-rc\\.5\\.\\d{14}\\.${checkedOutShortCommit()}`, 'u'),
+    )
     expect(allowed.stdout).toContain('dist-tag:  dev-0.1.0-rc.5')
     expect(allowed.stderr).toContain('pack requires an interactive terminal or --yes')
   })
