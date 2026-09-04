@@ -27,6 +27,15 @@ const PACKAGE_PATTERNS = [
   'packages/*/*/package.json',
   'apps/*/package.json',
 ] as const
+const WORKSPACE_PACKAGE_PATTERNS = [
+  ...PACKAGE_PATTERNS,
+  'plugins/*/package.json',
+  'native/landlock-run/package.json',
+  'native/landlock-run/packages/*/package.json',
+  'website/package.json',
+  'examples/package.json',
+  'python/sdk-runtime/package.json',
+] as const
 const DEPENDENCY_SECTIONS = [
   'dependencies',
   'devDependencies',
@@ -107,13 +116,21 @@ interface PackedPackage {
   origin: PackageOrigin
 }
 
+/** One separately versioned scoped package required by the packed baseline. */
+export interface ExternalPackage {
+  name: string
+  version: string
+  ranges: string[]
+}
+
 interface ReleaseManifest {
-  schemaVersion: 1
+  schemaVersion: 2
   commit: string
   version: string
   distTag: string
   registry: string
   packages: PackedPackage[]
+  externalPackages: ExternalPackage[]
 }
 
 interface PackOptions {
@@ -252,6 +269,7 @@ class WorkspacePackageSet {
   private constructor(
     readonly packages: PackageTarget[],
     readonly baseVersion: string,
+    readonly externalWorkspaceVersions: ReadonlyMap<string, string>,
   ) {}
 
   static discover(root: string, allowPrereleaseBase = false): WorkspacePackageSet {
@@ -288,8 +306,19 @@ class WorkspacePackageSet {
         origin: isVendored ? 'vendor' : 'harness',
       })
     }
+    const workspaceVersions = new Map<string, string>()
+    for (const manifestPath of globSync(WORKSPACE_PACKAGE_PATTERNS, { cwd: root }).sort()) {
+      const manifest = readObject(resolve(root, manifestPath))
+      const name = expectString(manifest, 'name', manifestPath)
+      const version = expectString(manifest, 'version', manifestPath)
+      if (workspaceVersions.has(name)) throw new Error(`duplicate workspace package name: ${name}`)
+      workspaceVersions.set(name, version)
+    }
+    const externalWorkspaceVersions = new Map(
+      [...workspaceVersions].filter(([name]) => !names.has(name)),
+    )
     packages.sort((left, right) => left.name.localeCompare(right.name))
-    return new WorkspacePackageSet(packages, baseVersion)
+    return new WorkspacePackageSet(packages, baseVersion, externalWorkspaceVersions)
   }
 
   stage(root: string, releaseVersion: string): void {
@@ -319,11 +348,13 @@ class ReleaseBundle {
     version: string,
     distTag: string,
     registry: string,
+    externalWorkspaceVersions: ReadonlyMap<string, string>,
     runner: CommandRunner,
   ): ReleaseBundle {
     const internalNames = new Set(expectedPackages.map(pkg => pkg.name))
     const expectedByName = new Map(expectedPackages.map(pkg => [pkg.name, pkg]))
     const missingNames = new Set(internalNames)
+    const packedManifests: Record<string, unknown>[] = []
     const packages = readdirSync(directory)
       .filter(name => name.endsWith('.tgz'))
       .sort()
@@ -344,6 +375,7 @@ class ReleaseBundle {
           throw new Error(`${tarball} still contains a workspace: dependency`)
         }
         validateInternalDependencyPins(artifact.manifest, internalNames, version, tarball)
+        packedManifests.push(artifact.manifest)
         return packedPackage(artifact.name, resolve(directory, tarball), expected.origin)
       })
       .sort((left, right) => left.name.localeCompare(right.name))
@@ -351,13 +383,19 @@ class ReleaseBundle {
     if (missingNames.size !== 0) {
       throw new Error(`missing tarballs for: ${[...missingNames].sort().join(', ')}`)
     }
+    const externalPackages = deriveExternalPackages(
+      packedManifests,
+      internalNames,
+      externalWorkspaceVersions,
+    )
     const manifest: ReleaseManifest = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       commit,
       version,
       distTag,
       registry,
       packages,
+      externalPackages,
     }
     writeFileSync(resolve(directory, RELEASE_MANIFEST_NAME), `${JSON.stringify(manifest, null, 2)}\n`)
     writeFileSync(
@@ -370,7 +408,7 @@ class ReleaseBundle {
   static load(manifestPath: string, runner: CommandRunner): ReleaseBundle {
     const absoluteManifestPath = resolve(manifestPath)
     const raw = readObject(absoluteManifestPath)
-    if (raw.schemaVersion !== 1) {
+    if (raw.schemaVersion !== 2) {
       throw new Error(`unsupported release manifest schema: ${String(raw.schemaVersion)}`)
     }
     const directory = dirname(absoluteManifestPath)
@@ -384,13 +422,20 @@ class ReleaseBundle {
       if (names.has(pkg.name)) throw new Error(`duplicate package in release manifest: ${pkg.name}`)
       names.add(pkg.name)
     }
+    const externalValues = raw.externalPackages
+    if (!Array.isArray(externalValues)) {
+      throw new Error('release manifest externalPackages must be an array')
+    }
+    const externalPackages = externalValues.map((value, index) => parseExternalPackage(value, index))
+    validateExternalPackageRows(externalPackages)
     const manifest: ReleaseManifest = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       commit: expectString(raw, 'commit', RELEASE_MANIFEST_NAME),
       version: expectString(raw, 'version', RELEASE_MANIFEST_NAME),
       distTag: expectString(raw, 'distTag', RELEASE_MANIFEST_NAME),
       registry: normalizeRegistry(expectString(raw, 'registry', RELEASE_MANIFEST_NAME)),
       packages,
+      externalPackages,
     }
     const bundle = new ReleaseBundle(directory, manifest)
     bundle.verifyLocal(runner)
@@ -399,6 +444,7 @@ class ReleaseBundle {
 
   private verifyLocal(runner: CommandRunner): void {
     const internalNames = new Set(this.manifest.packages.map(pkg => pkg.name))
+    const packedManifests: Record<string, unknown>[] = []
     for (const pkg of this.manifest.packages) {
       if (isAbsolute(pkg.tarball) || dirname(pkg.tarball) !== '.' || normalize(pkg.tarball) !== pkg.tarball) {
         throw new Error(`invalid tarball path for ${pkg.name}: ${pkg.tarball}`)
@@ -425,7 +471,17 @@ class ReleaseBundle {
         this.manifest.version,
         pkg.tarball,
       )
+      packedManifests.push(artifact.manifest)
     }
+    const declaredVersions = new Map(
+      this.manifest.externalPackages.map(pkg => [pkg.name, pkg.version]),
+    )
+    const actualExternalPackages = deriveExternalPackages(
+      packedManifests,
+      internalNames,
+      declaredVersions,
+    )
+    validateExternalPackages(this.manifest.externalPackages, actualExternalPackages)
   }
 
   tarballPath(pkg: PackedPackage): string {
@@ -443,10 +499,13 @@ class InstalledBundleSmoke {
   run(): void {
     const consumerRoot = mkdtempSync(join(tmpdir(), 'dsh-npm-consumer-'))
     try {
-      const dependencies = Object.fromEntries(this.bundle.manifest.packages.map(pkg => [
-        pkg.name,
-        pathToFileURL(this.bundle.tarballPath(pkg)).href,
-      ]))
+      const dependencies: Record<string, string> = {}
+      for (const pkg of this.bundle.manifest.packages) {
+        dependencies[pkg.name] = pathToFileURL(this.bundle.tarballPath(pkg)).href
+      }
+      for (const pkg of this.bundle.manifest.externalPackages) {
+        dependencies[pkg.name] = pkg.version
+      }
       writeFileSync(resolve(consumerRoot, 'package.json'), `${JSON.stringify({
         name: 'dsh-npm-baseline-consumer',
         version: '0.0.0',
@@ -598,6 +657,7 @@ class BaselinePackager {
         plan.version,
         plan.distTag,
         plan.registry,
+        packageSet.externalWorkspaceVersions,
         this.runner,
       )
       new InstalledBundleSmoke(bundle, this.runner).run()
@@ -830,6 +890,154 @@ function parsePackedPackage(value: unknown, index: number): PackedPackage {
     integrity: expectString(value, 'integrity', context),
     origin,
   }
+}
+
+function parseExternalPackage(value: unknown, index: number): ExternalPackage {
+  if (!isRecord(value)) throw new Error(`invalid external package at index ${index}`)
+  const context = `external package at index ${index}`
+  const keys = Object.keys(value).sort()
+  if (keys.join(',') !== 'name,ranges,version') {
+    throw new Error(`${context} must contain exactly name, ranges, and version`)
+  }
+  const name = expectString(value, 'name', context)
+  const version = expectString(value, 'version', context)
+  const ranges = value.ranges
+  if (!Array.isArray(ranges) || ranges.length === 0) {
+    throw new Error(`${context} ranges must be a non-empty array`)
+  }
+  const parsedRanges = ranges.map((range) => {
+    if (typeof range !== 'string') throw new Error(`${context} contains an invalid dependency range`)
+    validateExternalRange(range, version, context)
+    return range
+  })
+  validateExternalNameAndVersion(name, version, context)
+  return { name, version, ranges: parsedRanges }
+}
+
+/**
+ * Derive separately versioned workspace dependencies absent from the baseline package set.
+ * @param manifests Packed baseline package manifests.
+ * @param internalNames Names represented by baseline tarballs.
+ * @param workspaceVersions Same-repository package versions available outside the baseline targets.
+ * @returns Deterministically sorted external package declarations.
+ */
+export function deriveExternalPackages(
+  manifests: readonly Record<string, unknown>[],
+  internalNames: ReadonlySet<string>,
+  workspaceVersions: ReadonlyMap<string, string>,
+): ExternalPackage[] {
+  const rows = new Map<string, { version: string; ranges: Set<string> }>()
+  for (const [index, manifest] of manifests.entries()) {
+    for (const section of DEPENDENCY_SECTIONS) {
+      const dependencies = manifest[section]
+      if (dependencies === undefined) continue
+      if (!isRecord(dependencies)) {
+        throw new Error(`packed manifest at index ${String(index)} ${section} must be an object`)
+      }
+      for (const [name, range] of Object.entries(dependencies)) {
+        if (internalNames.has(name) || !name.startsWith('@deepseek-ai/')) continue
+        const context = `packed manifest at index ${String(index)} ${section} ${name}`
+        const version = workspaceVersions.get(name)
+        if (version === undefined) {
+          throw new Error(`${context} is absent from baseline tarballs and outside-target workspace packages`)
+        }
+        validateExternalNameAndVersion(name, version, context)
+        if (typeof range !== 'string') throw new Error(`${context} has a non-string dependency range`)
+        validateExternalRange(range, version, context)
+        const row = rows.get(name)
+        if (row !== undefined && row.version !== version) {
+          throw new Error(`${context} resolves to conflicting workspace versions`)
+        }
+        const resolved = row ?? { version, ranges: new Set<string>() }
+        resolved.ranges.add(range)
+        rows.set(name, resolved)
+      }
+    }
+  }
+  return [...rows]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([name, row]) => ({ name, version: row.version, ranges: [...row.ranges].sort() }))
+}
+
+/**
+ * Assert that a manifest's external declarations exactly match its packed dependency closure.
+ * @param declared External rows parsed from the release manifest.
+ * @param actual External rows derived from packed package manifests.
+ */
+export function validateExternalPackages(
+  declared: readonly ExternalPackage[],
+  actual: readonly ExternalPackage[],
+): void {
+  validateExternalPackageRows(declared)
+  validateExternalPackageRows(actual)
+  if (JSON.stringify(declared) !== JSON.stringify(actual)) {
+    throw new Error(
+      `external package declaration mismatch: expected ${JSON.stringify(actual)}, got ${JSON.stringify(declared)}`,
+    )
+  }
+}
+
+function validateExternalPackageRows(rows: readonly ExternalPackage[]): void {
+  let previousName: string | undefined
+  for (const [index, row] of rows.entries()) {
+    const context = `external package at index ${String(index)}`
+    validateExternalNameAndVersion(row.name, row.version, context)
+    if (previousName !== undefined && row.name <= previousName) {
+      throw new Error(`${context} is duplicate or not sorted by name`)
+    }
+    let previousRange: string | undefined
+    if (row.ranges.length === 0) throw new Error(`${context} ranges must not be empty`)
+    for (const range of row.ranges) {
+      validateExternalRange(range, row.version, context)
+      if (previousRange !== undefined && range <= previousRange) {
+        throw new Error(`${context} ranges are duplicate or not sorted`)
+      }
+      previousRange = range
+    }
+    previousName = row.name
+  }
+}
+
+function validateExternalNameAndVersion(name: string, version: string, context: string): void {
+  if (!/^@deepseek-ai\/[a-z0-9][a-z0-9._-]*$/.test(name)) {
+    throw new Error(`${context} has unsafe package name ${JSON.stringify(name)}`)
+  }
+  if (parseSemVer(version) === undefined) {
+    throw new Error(`${context} has invalid exact version ${JSON.stringify(version)}`)
+  }
+}
+
+function validateExternalRange(range: string, version: string, context: string): void {
+  if (range === '' || range.trim() !== range || range.startsWith('workspace:')) {
+    throw new Error(`${context} has unsafe dependency range ${JSON.stringify(range)}`)
+  }
+  const operator = range.startsWith('^') ? '^' : range.startsWith('~') ? '~' : ''
+  const target = operator === '' ? range : range.slice(1)
+  if (parseSemVer(target) === undefined || !simpleRangeIncludes(operator, target, version)) {
+    throw new Error(
+      `${context} range ${JSON.stringify(range)} does not safely include exact version ${version}`,
+    )
+  }
+}
+
+function simpleRangeIncludes(operator: string, target: string, version: string): boolean {
+  if (operator === '') return target === version
+  const parsedTarget = parseSemVer(target)
+  const parsedVersion = parseSemVer(version)
+  if (parsedTarget === undefined || parsedVersion === undefined
+    || parsedTarget.prerelease !== undefined || parsedVersion.prerelease !== undefined) return false
+  const targetParts = parsedTarget.core.split('.').map(Number)
+  const versionParts = parsedVersion.core.split('.').map(Number)
+  const [targetMajor, targetMinor, targetPatch] = targetParts as [number, number, number]
+  const [major, minor, patch] = versionParts as [number, number, number]
+  const atLeastTarget = major > targetMajor
+    || (major === targetMajor && (minor > targetMinor
+      || (minor === targetMinor && patch >= targetPatch)))
+  if (!atLeastTarget) return false
+  if (operator === '~') return major === targetMajor && minor === targetMinor
+  if (targetMajor > 0) return major === targetMajor
+  if (targetMinor > 0) return major === 0 && minor === targetMinor
+  return major === 0 && minor === 0 && patch === targetPatch
 }
 
 function containsWorkspaceProtocol(value: unknown): boolean {

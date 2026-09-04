@@ -16,6 +16,8 @@ The combined `release` command and manifest-driven `publish` command can change 
 
 Stable bases keep the existing `<base>-<timestamp>-<commit>` version and `dev-<base>` dist-tag exactly. Prerelease bases use `dev-<core>-<prerelease>`; this restricted character set is a valid npm tag and cannot be parsed as a SemVer version. Every staged package and internal dependency pin still receives the one planned version, and the tarball manifest and installed-consumer probes still verify that identity.
 
+Release manifest schema 2 records separately versioned scoped dependencies in deterministic `externalPackages` rows containing `name`, exact `version`, and the distinct staged dependency `ranges`. A scoped dependency absent from baseline tarballs qualifies only when a same-name package exists in the repository workspace outside the baseline package patterns. Creation derives the rows from packed manifests and that workspace catalog; loading and verification require the declaration to equal the absent scoped references. External packages are installed at their declared exact versions for consumer probes but do not enter the baseline tarball list, checksums, or publication loop.
+
 The default `pack` path remains stable-only. `release`, `publish`, and `verify` reject `--allow-prerelease-base`; the option does not authorize registry mutation and does not alter manifest-driven publication behavior.
 
 ## Alternatives considered

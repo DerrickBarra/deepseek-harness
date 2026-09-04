@@ -2,7 +2,9 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-import { createBaselineIdentity } from './publish-npm-baseline.ts'
+import {
+  createBaselineIdentity, deriveExternalPackages, validateExternalPackages, type ExternalPackage,
+} from './publish-npm-baseline.ts'
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
 const script = fileURLToPath(new URL('./publish-npm-baseline.ts', import.meta.url))
@@ -22,6 +24,12 @@ function checkedOutShortCommit(): string {
   })
   if (result.status !== 0) throw new Error(result.stderr)
   return result.stdout.trim()
+}
+
+const nativeExternal: ExternalPackage = {
+  name: '@deepseek-ai/node-addon-landlock-run',
+  version: '0.1.1',
+  ranges: ['^0.1.1'],
 }
 
 describe('publish-npm-baseline', () => {
@@ -57,6 +65,50 @@ describe('publish-npm-baseline', () => {
   ])('rejects invalid prerelease base %s', (version) => {
     expect(() => createBaselineIdentity(version, '20260904153045', '5fc9d6c37a', true))
       .toThrow(`package.json must have a stable or prerelease SemVer version, got ${version}`)
+  })
+
+  it('derives only absent scoped dependencies backed by outside-target workspace packages', () => {
+    const manifests = [{
+      dependencies: {
+        '@deepseek-ai/dsh': '0.1.0-next',
+        '@deepseek-ai/node-addon-landlock-run': '^0.1.1',
+        'plain-external': '^2.0.0',
+      },
+    }, {
+      optionalDependencies: { '@deepseek-ai/node-addon-landlock-run': '^0.1.1' },
+    }]
+    expect(deriveExternalPackages(
+      manifests,
+      new Set(['@deepseek-ai/dsh']),
+      new Map([[nativeExternal.name, nativeExternal.version]]),
+    )).toEqual([nativeExternal])
+    expect(() => deriveExternalPackages(manifests, new Set(['@deepseek-ai/dsh']), new Map()))
+      .toThrow(/outside-target workspace packages/)
+  })
+
+  it('rejects missing, extra, duplicate, and mismatched external declarations', () => {
+    const cases: ExternalPackage[][] = [
+      [],
+      [nativeExternal, { name: '@deepseek-ai/unused', version: '1.0.0', ranges: ['^1.0.0'] }],
+      [nativeExternal, nativeExternal],
+      [{ ...nativeExternal, version: '0.1.2' }],
+      [{ ...nativeExternal, ranges: ['^0.1.0'] }],
+    ]
+    for (const declared of cases) {
+      expect(() => { validateExternalPackages(declared, [nativeExternal]) }).toThrow()
+    }
+  })
+
+  it('rejects unsafe external package names, versions, and ranges', () => {
+    const cases: ExternalPackage[] = [
+      { ...nativeExternal, name: '@other/native' },
+      { ...nativeExternal, version: 'latest' },
+      { ...nativeExternal, ranges: ['workspace:^'] },
+      { ...nativeExternal, ranges: ['file:../native'] },
+    ]
+    for (const declared of cases) {
+      expect(() => { validateExternalPackages([declared], [nativeExternal]) }).toThrow()
+    }
   })
 
   it('plans the checked-out prerelease only with the explicit pack option', () => {
