@@ -206,7 +206,15 @@ function clientConfig(id: string, entry: string): UserConfig {
       // guaranteed runtime throw, so the rule is the table list itself: no
       // opinion for table entries (neverBundle above wins), bundle everything else.
       alwaysBundle: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
-      onlyBundle: ['clsx', 'zod'],
+      onlyBundle: [
+        '@tanstack/react-virtual',
+        '@tanstack/virtual-core',
+        'clsx',
+        'diff',
+        'immer',
+        'zod',
+        'zustand',
+      ],
     },
     plugins: [{
       // Keep generated browser bundle artifacts suitable for git diff --check
