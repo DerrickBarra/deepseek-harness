@@ -16,7 +16,7 @@ import {
 import { tmpdir } from 'node:os'
 import { basename, dirname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path'
 import { createInterface } from 'node:readline/promises'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { validateTarballPayload } from './publication-payload.ts'
 
@@ -120,6 +120,18 @@ interface PackOptions {
   ref: string
   registry: string
   outputDirectory: string
+  allowPrereleaseBase: boolean
+}
+
+interface BaselineIdentity {
+  version: string
+  distTag: string
+}
+
+interface ParsedSemVer {
+  core: string
+  prerelease: string | undefined
+  build: string | undefined
 }
 
 /** Fixes the identity of one pack attempt before any expensive work begins. */
@@ -133,6 +145,7 @@ class BaselinePackPlan {
     readonly distTag: string,
     readonly registry: string,
     readonly artifactDirectory: string,
+    readonly allowPrereleaseBase: boolean,
   ) {}
 
   async confirm(assumeYes: boolean): Promise<void> {
@@ -241,7 +254,7 @@ class WorkspacePackageSet {
     readonly baseVersion: string,
   ) {}
 
-  static discover(root: string): WorkspacePackageSet {
+  static discover(root: string, allowPrereleaseBase = false): WorkspacePackageSet {
     const manifestPaths = globSync(PACKAGE_PATTERNS, { cwd: root }).sort()
     if (manifestPaths.length === 0) {
       throw new Error('no package manifests found under vendor/, packages/, or apps/')
@@ -250,9 +263,7 @@ class WorkspacePackageSet {
     const packages: PackageTarget[] = []
     const names = new Set<string>()
     const baseVersion = expectString(readObject(resolve(root, 'package.json')), 'version', 'package.json')
-    if (!/^\d+\.\d+\.\d+$/.test(baseVersion)) {
-      throw new Error(`package.json must have a stable X.Y.Z version, got ${baseVersion}`)
-    }
+    validateBaseVersion(baseVersion, 'package.json', allowPrereleaseBase)
     for (const manifestPath of manifestPaths) {
       const manifest = readObject(resolve(root, manifestPath))
       const name = expectString(manifest, 'name', manifestPath)
@@ -518,10 +529,13 @@ class BaselinePackager {
       `${commit}:package.json`,
     )
     const baseVersion = expectString(rootManifest, 'version', `${commit}:package.json`)
-    validateBaseVersion(baseVersion, `${commit}:package.json`)
-    const version = `${baseVersion}-${timestamp}-${shortCommit}`
-    const distTag = `dev-${baseVersion}`
-    validateDistTag(distTag)
+    const { version, distTag } = createBaselineIdentity(
+      baseVersion,
+      timestamp,
+      shortCommit,
+      options.allowPrereleaseBase,
+      `${commit}:package.json`,
+    )
     const artifactDirectory = resolve(options.outputDirectory, version)
     if (existsSync(artifactDirectory)) {
       throw new Error(`output already exists: ${artifactDirectory}`)
@@ -535,6 +549,7 @@ class BaselinePackager {
       distTag,
       registry,
       artifactDirectory,
+      options.allowPrereleaseBase,
     )
   }
 
@@ -546,7 +561,7 @@ class BaselinePackager {
     const worktree = DetachedWorktree.create(this.repositoryRoot, plan.commit, this.runner)
     let createdArtifactDirectory = false
     try {
-      const packageSet = WorkspacePackageSet.discover(worktree.path)
+      const packageSet = WorkspacePackageSet.discover(worktree.path, plan.allowPrereleaseBase)
       if (packageSet.baseVersion !== plan.baseVersion) {
         throw new Error(
           `workspace package version ${packageSet.baseVersion} does not match root version `
@@ -935,14 +950,68 @@ function assertPathWithin(root: string, path: string, label: string): void {
   }
 }
 
-function validateDistTag(value: string): void {
-  if (value === '' || /\s/.test(value)) throw new Error(`invalid dist-tag: ${JSON.stringify(value)}`)
+const SEMVER_IDENTIFIER = String.raw`(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)`
+const SEMVER_PATTERN = new RegExp(
+  String.raw`^((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))`
+  + String.raw`(?:-(${SEMVER_IDENTIFIER}(?:\.${SEMVER_IDENTIFIER})*))?`
+  + String.raw`(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`,
+)
+
+function parseSemVer(value: string): ParsedSemVer | undefined {
+  const match = SEMVER_PATTERN.exec(value)
+  if (match === null) return undefined
+  return { core: match[1] as string, prerelease: match[2], build: match[3] }
 }
 
-function validateBaseVersion(value: string, context: string): void {
-  if (!/^\d+\.\d+\.\d+$/.test(value)) {
-    throw new Error(`${context} must have a stable X.Y.Z version, got ${value}`)
+function validateDistTag(value: string): void {
+  if (!/^[A-Za-z][0-9A-Za-z._-]*$/.test(value) || parseSemVer(value) !== undefined) {
+    throw new Error(`invalid dist-tag: ${JSON.stringify(value)}`)
   }
+}
+
+function validateBaseVersion(
+  value: string,
+  context: string,
+  allowPrereleaseBase = false,
+): ParsedSemVer {
+  const parsed = parseSemVer(value)
+  if (!allowPrereleaseBase) {
+    if (!/^\d+\.\d+\.\d+$/.test(value)) {
+      throw new Error(`${context} must have a stable X.Y.Z version, got ${value}`)
+    }
+    return parsed ?? { core: value, prerelease: undefined, build: undefined }
+  }
+  if (parsed === undefined || (parsed.prerelease === undefined && parsed.build !== undefined)) {
+    throw new Error(`${context} must have a stable or prerelease SemVer version, got ${value}`)
+  }
+  return parsed
+}
+
+/**
+ * Derive the immutable package version and npm dist-tag for one baseline pack.
+ * @param baseVersion - Exact version stored in the target commit's root manifest.
+ * @param timestamp - Compact UTC timestamp captured for this pack attempt.
+ * @param shortCommit - Commit abbreviation recorded in the generated version.
+ * @param allowPrereleaseBase - Whether a valid prerelease base may be extended.
+ * @param context - Source label included in version validation failures.
+ * @returns One version and dist-tag used across the complete package family.
+ */
+export function createBaselineIdentity(
+  baseVersion: string,
+  timestamp: string,
+  shortCommit: string,
+  allowPrereleaseBase = false,
+  context = 'package.json',
+): BaselineIdentity {
+  const parsed = validateBaseVersion(baseVersion, context, allowPrereleaseBase)
+  const version = parsed.prerelease === undefined
+    ? `${baseVersion}-${timestamp}-${shortCommit}`
+    : `${parsed.core}-${parsed.prerelease}.${timestamp}.${shortCommit}`
+      + (parsed.build === undefined ? '' : `+${parsed.build}`)
+  const distTag = `dev-${parsed.core}`
+    + (parsed.prerelease === undefined ? '' : `-${parsed.prerelease}`)
+  validateDistTag(distTag)
+  return { version, distTag }
 }
 
 function parseDistTagListing(raw: string, name: string): Map<string, string> {
@@ -1013,7 +1082,12 @@ Pack/release options:
   --ref <git-ref>       Git commit to stage (default: HEAD)
   --registry <url>      npm registry (default: ${DEFAULT_REGISTRY})
   --output-dir <path>   Artifact root (default: ${DEFAULT_OUTPUT_DIRECTORY})
-  --yes                 pack/release without waiting for Enter`)
+  --yes                 pack/release without waiting for Enter
+
+Pack-only options:
+  --allow-prerelease-base
+                        Extend a valid prerelease workspace version; default packing
+                        requires a stable X.Y.Z base`)
 }
 
 async function main(): Promise<void> {
@@ -1037,14 +1111,19 @@ async function main(): Promise<void> {
         registry: { type: 'string', default: DEFAULT_REGISTRY },
         'output-dir': { type: 'string', default: resolve(repositoryRoot, DEFAULT_OUTPUT_DIRECTORY) },
         yes: { type: 'boolean', default: false },
+        'allow-prerelease-base': { type: 'boolean', default: false },
       },
       strict: true,
     })
+    if (command !== 'pack' && values['allow-prerelease-base']) {
+      throw new Error('--allow-prerelease-base is pack-only and cannot be used with release')
+    }
     const packager = new BaselinePackager(repositoryRoot, runner)
     const plan = packager.plan({
       ref: values.ref,
       registry: values.registry,
       outputDirectory: resolve(values['output-dir']),
+      allowPrereleaseBase: values['allow-prerelease-base'],
     })
     await plan.confirm(values.yes)
     const bundle = packager.pack(plan)
@@ -1060,9 +1139,13 @@ async function main(): Promise<void> {
       options: {
         manifest: { type: 'string' },
         yes: { type: 'boolean', default: false },
+        'allow-prerelease-base': { type: 'boolean', default: false },
       },
       strict: true,
     })
+    if (values['allow-prerelease-base']) {
+      throw new Error(`--allow-prerelease-base is pack-only and cannot be used with ${command}`)
+    }
     if (values.manifest === undefined) throw new Error(`${command} requires --manifest`)
     if (command === 'verify' && values.yes) throw new Error('verify does not accept --yes')
     const bundle = ReleaseBundle.load(values.manifest, runner)
@@ -1075,9 +1158,12 @@ async function main(): Promise<void> {
   throw new Error(`unknown command: ${command}`)
 }
 
-try {
-  await main()
-} catch (error: unknown) {
-  console.error(`publish-npm-baseline: ${error instanceof Error ? error.message : String(error)}`)
-  process.exitCode = 1
+const entryPath = process.argv[1]
+if (entryPath !== undefined && resolve(entryPath) === fileURLToPath(import.meta.url)) {
+  try {
+    await main()
+  } catch (error: unknown) {
+    console.error(`publish-npm-baseline: ${error instanceof Error ? error.message : String(error)}`)
+    process.exitCode = 1
+  }
 }
