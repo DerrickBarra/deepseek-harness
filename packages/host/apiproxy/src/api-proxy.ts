@@ -114,14 +114,10 @@ import { canOpenNativePath, openNativePath, openNativeTextFile } from './native-
 const DEFAULT_MAX_MESSAGES = 50
 
 /**
- * Non-model settings namespaces intentionally served to the Web client. The
- * plugin-owned entries (`agent-loop`, `bash`, `web-search-deepseek`) are the
- * host-plane sections the plugin configuration page edits; a namespace absent
- * here answers `settings-not-exposed` even when its owner registered it, so
- * adding a section to that page is a decision made here rather than by the
- * registering plugin. Moving that declaration to `settings.register()`, so a
- * plugin can expose its own configuration without a change in this package,
- * is deferred work.
+ * Non-model settings namespaces always served by built-in Web product policy.
+ * The plugin-configuration page owns these sections independently of their
+ * registrations; owner-declared `exposure: 'web'` is the additive path for a
+ * plugin namespace that is not part of this static policy.
  */
 const WEB_SETTINGS_NAMESPACES = [
   'agent-loop', 'shell', 'locale', 'permission', 'ui-conversation', 'ui-theme', 'web-search-deepseek',
@@ -1945,15 +1941,17 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
   }
 
   /**
-   * The settings namespaces this proxy serves: configurable model providers
-   * plus the small explicit Web preference and product-owned allowlists. The
-   * settings seam remains general; a future registration does not become
-   * remotely readable or writable by default.
+   * The settings namespaces this proxy serves: configurable model providers,
+   * explicit product allowlists, and registrations whose owner opts into Web
+   * configuration. Registrations remain private by default.
    */
-  function exposedNamespaces(): Set<string> {
+  function exposedNamespaces(descriptors: readonly SettingsDescriptor[]): Set<string> {
     const exposed = modelProviderNamespaces()
     for (const ns of WEB_SETTINGS_NAMESPACES) exposed.add(ns)
     for (const ns of PRODUCT_SETTINGS_NAMESPACES) exposed.add(ns)
+    for (const descriptor of descriptors) {
+      if (descriptor.exposure === 'web') exposed.add(String(descriptor.ns))
+    }
     return exposed
   }
 
@@ -2006,7 +2004,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       // in the exposed set either, so naming the real fault costs no ground.
       return rejected(error)
     }
-    if (!exposedNamespaces().has(ns)) return notExposed(request, ns)
+    const descriptors = settings.describe({ redactSecrets: true })
+    if (!exposedNamespaces(descriptors).has(ns)) return notExposed(request, ns)
     try {
       if (mode === 'update') await settings.update(branded, section, expectedRevision)
       else if (mode === 'replace') await settings.replace(branded, section, expectedRevision)
@@ -3261,11 +3260,12 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       describe(request) {
         const settings = ctx.get('settings')
         if (settings === undefined) return Promise.resolve(err(request, settingsAbsent()))
-        const exposed = exposedNamespaces()
+        const descriptors = settings.describe({ redactSecrets: true })
+        const exposed = exposedNamespaces(descriptors)
         return Promise.resolve(ok(request, {
           writable: settings.writable,
           hasDocument: settings.documentPath !== undefined,
-          namespaces: settings.describe({ redactSecrets: true })
+          namespaces: descriptors
             .filter(descriptor => exposed.has(String(descriptor.ns)))
             .map(namespaceView),
         }))

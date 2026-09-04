@@ -5,8 +5,14 @@
  * invalidation frames (settings/credentials/models changed).
  */
 
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import Include from '@deepseek-ai/cordis-plugin-include'
+import Loader from '@deepseek-ai/cordis-plugin-loader'
 import z from '@deepseek-ai/schemastery'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import SessionStore from '@deepseek-ai/dsh-session'
@@ -183,8 +189,8 @@ async function harness(options?: {
   await ctx.plugin(LlmRuntime)
   if (options?.settings !== false) await ctx.plugin(MemorySettings, options?.settings)
   if (options?.credentials !== false) await ctx.plugin(MemoryCredentials, options?.credentials)
-  // Model-provider namespaces plus the explicit Web preference and product
-  // onboarding allowlists are the proxy's complete settings surface.
+  // Provider-directory, owner-opted, and explicit product/Web policies are the
+  // proxy's complete settings exposure sources.
   if (options?.configurableProviders !== false) {
     ctx.llm.registerConfigurableProviders([
       { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
@@ -408,6 +414,86 @@ describe('settings domain', () => {
     expect(ctx.settings.describe().find(d => String(d.ns) === 'some-other-plugin')?.value).toEqual({})
   })
 
+  it('serves an owner-opted Web namespace while default registrations stay hidden and secrets stay redacted', async () => {
+    const ctx = await harness({ settings: {
+      doc: { 'web-plugin': { token: 'secret-value', title: 'Initial' } },
+    } })
+    ctx.settings.register(settingsNamespace('web-plugin'), z.object({
+      token: z.string().role('secret'),
+      title: z.string().default('Default'),
+    }), { exposure: 'web' })
+    ctx.settings.register(settingsNamespace('private-plugin'), z.object({ title: z.string().default('Private') }))
+    const api = createApiProxy(ctx, DEFAULTS)
+
+    const described = expectOk(await api.settings.describe(request({})))
+    expect(described.namespaces.map(view => view.ns)).toEqual(['web-plugin'])
+    expect(described.namespaces[0]).toMatchObject({
+      value: { title: 'Initial' },
+      user: { title: 'Initial' },
+      secrets: [{ path: ['token'], set: true }],
+    })
+    expect(JSON.stringify(described)).not.toContain('secret-value')
+    expect(described.namespaces[0]).not.toHaveProperty('exposure')
+
+    const updated = expectOk(await api.settings.mutate(request({
+      ns: 'web-plugin',
+      ops: [{ op: 'set', path: ['title'], value: 'Updated' }],
+    })))
+    expect(updated.value).toEqual({ title: 'Updated' })
+    expect(updated.secrets).toEqual([{ path: ['token'], set: true }])
+    expect(JSON.stringify(updated)).not.toContain('secret-value')
+    expect(expectErr(await api.settings.mutate(request({
+      ns: 'private-plugin',
+      ops: [{ op: 'set', path: ['title'], value: 'Leaked' }],
+    })))).toMatchObject({ code: 'settings-not-exposed', details: { ns: 'private-plugin' } })
+  })
+
+  it('serves effect-scoped Web exposure from a real Loader composition', async () => {
+    const ctx = await harness({ configurableProviders: false })
+    const root = await mkdtemp(join(tmpdir(), 'dsh-apiproxy-web-settings-'))
+    const configPath = join(root, 'cordis.yml')
+    let ownerScope: { get(): { title: string } } | undefined
+    try {
+      await writeFile(configPath, "- name: '@test/web-settings-owner'\n")
+      ctx.baseUrl = pathToFileURL(root).href + '/'
+      await ctx.plugin(Loader)
+      ctx.loader.builtins.include = Include
+      ctx.loader.internal = {
+        version: 'v2',
+        async import(specifier: string) {
+          if (specifier !== '@test/web-settings-owner') throw new Error(`unexpected Loader import: ${specifier}`)
+          return {
+            name: 'web-settings-owner',
+            inject: ['settings'],
+            apply(child: Context) {
+              ownerScope = child.settings.register(settingsNamespace('composed-plugin'), z.object({
+                title: z.string().default('Composed'),
+              }), { exposure: 'web' })
+            },
+          }
+        },
+      } as unknown as NonNullable<typeof ctx.loader.internal>
+      await ctx.loader.create({
+        name: 'cordis:include',
+        config: { path: pathToFileURL(configPath).href },
+      })
+      await ctx.loader.await()
+
+      const api = createApiProxy(ctx, DEFAULTS)
+      expect(expectOk(await api.settings.describe(request({}))).namespaces.map(view => view.ns))
+        .toEqual(['composed-plugin'])
+      expect(ownerScope?.get()).toEqual({ title: 'Composed' })
+      expectOk(await api.settings.mutate(request({
+        ns: 'composed-plugin',
+        ops: [{ op: 'set', path: ['title'], value: 'Updated' }],
+      })))
+      expect(ownerScope?.get()).toEqual({ title: 'Updated' })
+    } finally {
+      await ctx.fiber.dispose()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('serves product preference namespaces without invalidating the model catalog', async () => {
     const ctx = await harness()
     ctx.settings.register(settingsNamespace('ui-onboarding'), z.object({ welcomeNoticeVersion: z.string() }))
@@ -566,13 +652,16 @@ describe('settings domain', () => {
     expect(unexposed.message.replace('some-other-plugin', 'unknown-ns')).toBe(unknown.message)
   })
 
-  it('maps a read-only provider refusal onto the same rejection', async () => {
+  it('does not let owner-opted Web exposure bypass a read-only provider', async () => {
     const ctx = await harness({ settings: { readOnly: true } })
-    ctx.settings.register(NS, AdapterConfig)
+    ctx.settings.register(settingsNamespace('web-plugin'), z.object({ enabled: z.boolean().default(false) }), {
+      exposure: 'web',
+    })
     const api = createApiProxy(ctx, DEFAULTS)
     const value = expectOk(await api.settings.describe(request({})))
     expect(value.writable).toBe(false)
-    const error = expectErr(await api.settings.update(request({ ns: 'llm-deepseek', patch: {} })))
+    expect(value.namespaces.map(view => view.ns)).toEqual(['web-plugin'])
+    const error = expectErr(await api.settings.update(request({ ns: 'web-plugin', patch: {} })))
     expect(error.code).toBe('settings-rejected')
     expect(error.message).toContain('read-only')
   })

@@ -17,7 +17,7 @@ type SettingsNamespace = Branded<'SettingsNamespace'>
 
 ## 注册
 
-注册把 schemastery schema 绑定到调用方插件 fiber 上的 namespace——dispose（资源释放）该 fiber 即移除 namespace 及其观察者。options 携带组合层、owner 的生效时机，以及一个可选的、用于校验 schema 表达不了的约束的钩子。
+注册把 schemastery schema 绑定到调用方插件 fiber 上的 namespace——dispose（资源释放）该 fiber 即移除 namespace 及其观察者。options 携带组合层、owner 的生效时机、可选的受信任 Web 暴露，以及一个可选的、用于校验 schema 表达不了的约束的钩子。暴露默认拒绝：只有精确值 `'web'` 才让 ApiProxy 的 describe 与 mutate 接纳该 namespace，而代理仍执行传输信任、脱敏与提供方写入策略。
 
 ```ts type-equiv
 /** Registration options beyond the namespace schema. */
@@ -26,6 +26,8 @@ interface SettingsRegisterOptions<T> {
   base?: Partial<T>
   /** Owner's effect timing, surfaced to configuration UIs; defaults to `live`. */
   applies?: SettingsApplies
+  /** Configuration client allowed to describe and mutate this namespace; omitted is private. */
+  exposure?: SettingsExposure
   /**
    * Reject a resolved section the owner could not act on, for constraints its
    * schema cannot express — a cross-field requirement, or one field's validity
@@ -56,6 +58,11 @@ interface SettingsRegisterOptions<T> {
 ```ts type-equiv
 /** When a namespace's changes take effect for its owner. */
 type SettingsApplies = 'live' | 'restart'
+```
+
+```ts type-equiv
+/** Optional configuration client authorized by the namespace owner. */
+type SettingsExposure = 'web'
 ```
 
 ## Owner scope
@@ -120,6 +127,8 @@ interface SettingsDescriptor {
   user?: unknown
   /** Owner's declared effect timing. */
   applies: SettingsApplies
+  /** Owner-declared configuration client exposure; absent registrations remain private. */
+  exposure?: SettingsExposure
   /** Schema-declared secret positions; present only under `redactSecrets`. */
   secrets?: RedactedSecret[]
 }
@@ -191,7 +200,7 @@ prepareDocument(): Promise<string | undefined>
  * registration itself — the earliest point where the schema can judge it.
  * @param ns - unique namespace; duplicate registration fails loud.
  * @param schema - schemastery schema resolving this namespace's value.
- * @param options - composition `base` layer and effect timing.
+ * @param options - composition `base`, effect timing, optional Web exposure, and owner validation.
  * @returns the owner scope for reads, observation, and updates.
  */
 register<T>(ns: SettingsNamespace, schema: z<T>, options?: SettingsRegisterOptions<T>): SettingsScope<T>
@@ -252,7 +261,7 @@ async replace(ns: SettingsNamespace, section: object, expectedRevision?: number)
 async mutate(ns: SettingsNamespace, ops: readonly SettingsPathOp[], expectedRevision?: number): Promise<void>
 ```
 
-Source: [`packages/settings/settings/src/index.ts:350`](../../packages/settings/settings/src/index.ts)
+Source: [`packages/settings/settings/src/index.ts:358`](../../packages/settings/settings/src/index.ts)
 
 <a id="settings-events"></a>
 
