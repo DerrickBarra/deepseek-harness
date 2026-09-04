@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-01-browser-branding-and-palette-axes.md
-2026-09-01-browser-branding-and-palette-axes.md: 6ac49bdc5b7c96e075546c266c44fa731b929196
-2026-09-01-browser-branding-and-palette-axes.zh.md: fe01a32f77e1f061c220e44fad56a6fd95a36ac2
+2026-09-01-browser-branding-and-palette-axes.md: 4eb7c3378621fbb10a0a395bd90da5e93ee315e1
+2026-09-01-browser-branding-and-palette-axes.zh.md: cf16543655047710deaf6130e0fe07e20c5377f6
