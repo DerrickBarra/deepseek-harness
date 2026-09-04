@@ -30,6 +30,30 @@ describe('client bundle build faces', () => {
     expect(development?.entry).toEqual({ client: 'src/client/index.ts' })
     expect(artifact?.entry).toEqual({ client: 'lib/types/client/index.js' })
   })
+
+  it('bundles ordinary browser libraries while keeping platform identities external', () => {
+    const deps = clientConfigs()[0]?.deps as {
+      alwaysBundle: (id: string) => true | undefined
+      neverBundle: string[]
+      onlyBundle: string[]
+    }
+    const ordinaryLibraries = [
+      '@tanstack/react-virtual',
+      '@tanstack/virtual-core',
+      'clsx',
+      'diff',
+      'immer',
+      'zod',
+      'zustand',
+    ]
+
+    expect(deps.onlyBundle).toEqual(ordinaryLibraries)
+    for (const library of ordinaryLibraries) expect(deps.alwaysBundle(library)).toBe(true)
+    for (const external of ['react', 'react-dom', '@deepseek-ai/cordis']) {
+      expect(deps.neverBundle).toContain(external)
+      expect(deps.alwaysBundle(external)).toBeUndefined()
+    }
+  })
 })
 
 function clientSourceMapPath(packagePath: string): string {
