@@ -16,6 +16,8 @@ Status: implemented
 
 稳定基础版本继续原样使用现有 `<base>-<timestamp>-<commit>` 版本和 `dev-<base>` dist-tag。预发布基础版本使用 `dev-<core>-<prerelease>`；这组受限字符能构成有效的 npm tag，且不能被解析为 SemVer 版本。所有暂存包和内部依赖精确版本仍使用同一个规划版本，tarball manifest 和已安装消费方探针仍会验证该标识。
 
+发布 manifest schema 2 通过确定排序的 `externalPackages` 行记录独立版本的 scoped 依赖，每行包含 `name`、精确 `version` 与暂存依赖中各不相同的 `ranges`。仅当仓库 workspace 中存在同名包、且该包位于基线包模式之外时，基线 tarball 中缺失的 scoped 依赖才可被声明为外部包。创建流程根据打包后的 manifest 与该 workspace 目录派生这些行；加载和验证流程要求声明与实际缺失的 scoped 引用完全一致。消费方探针按声明的精确版本安装外部包，但外部包不进入基线 tarball 列表、校验和或发布循环。
+
 默认 `pack` 路径仍然只允许稳定基础版本。`release`、`publish` 和 `verify` 都拒绝 `--allow-prerelease-base`；该选项不授权 registry 变更，也不改变由 manifest 驱动的发布行为。
 
 ## 考虑过的替代方案

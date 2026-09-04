@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-04-pack-only-prerelease-baselines.md
-2026-09-04-pack-only-prerelease-baselines.md: 4edff285c27bd3bf0b23cc913949a1e8edf51313
-2026-09-04-pack-only-prerelease-baselines.zh.md: ec7049a9005980c0e753d884ac4ae80d8ad6cc02
+2026-09-04-pack-only-prerelease-baselines.md: 7917aa30ae90e06cc29413ef66f3cee4e1ef6f4b
+2026-09-04-pack-only-prerelease-baselines.zh.md: 419019e6136029e2267b00b0e10917f1f24b5e7b
