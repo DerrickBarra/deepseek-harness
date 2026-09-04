@@ -59,11 +59,15 @@ export interface ThemeSettings {
   customPalette: CustomPalette
 }
 
+const THEME_SETTINGS_KEYS = [
+  THEME_PREFERENCE_FIELD, THEME_PALETTE_FIELD, CUSTOM_PALETTE_FIELD,
+] as const
+const CUSTOM_PALETTE_KEYS = ['light', 'dark'] as const
+const PALETTE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const semanticSchema = z.object(Object.fromEntries(
   SEMANTIC_COLOR_KEYS.map(key => [key, z.string().pattern(HEX_COLOR_PATTERN)]),
 ) as Record<SemanticColorKey, z<string>>)
-const paletteIdSchema = z.string()
-  .pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/) as z<ThemePaletteId>
+const paletteIdSchema = z.string().pattern(PALETTE_ID_PATTERN) as z<ThemePaletteId>
 
 /** Durable theme schema. */
 export const ThemeSettingsSchema: z<ThemeSettings> = z.object({
@@ -94,16 +98,42 @@ export function isThemePreference(value: unknown): value is ThemePreference {
   return THEME_PREFERENCES.some(preference => preference === value)
 }
 
+function hasExactKeys<const Key extends string>(
+  value: unknown,
+  keys: readonly Key[],
+): value is Record<Key, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const actual = Object.keys(value)
+  return actual.length === keys.length && keys.every(key => Object.hasOwn(value, key))
+}
+
 /**
- * Narrow one value to a complete strict-hex Custom palette.
+ * Narrow one value to a complete strict-hex Custom palette with no unknown fields.
  * @param value Candidate settings value.
- * @returns Whether both mode objects contain every strict-hex semantic color.
+ * @returns Whether both exact mode objects contain exactly the semantic color fields.
  */
 export function isCustomPalette(value: unknown): value is CustomPalette {
-  if (typeof value !== 'object' || value === null) return false
-  return (['light', 'dark'] as const).every((mode) => {
-    const colors = (value as Partial<CustomPalette>)[mode]
-    return typeof colors === 'object' && colors !== null
-      && SEMANTIC_COLOR_KEYS.every(key => HEX_COLOR_PATTERN.test(colors[key] ?? ''))
+  if (!hasExactKeys(value, CUSTOM_PALETTE_KEYS)) return false
+  return CUSTOM_PALETTE_KEYS.every((mode) => {
+    const colors = value[mode]
+    return hasExactKeys(colors, SEMANTIC_COLOR_KEYS)
+      && SEMANTIC_COLOR_KEYS.every((key) => {
+        const color = colors[key]
+        return typeof color === 'string' && HEX_COLOR_PATTERN.test(color)
+      })
   })
+}
+
+/**
+ * Reject theme settings that contain unknown fields or unsupported persisted values.
+ * @param value Candidate resolved settings section.
+ */
+export function validateThemeSettings(value: unknown): asserts value is ThemeSettings {
+  if (!hasExactKeys(value, THEME_SETTINGS_KEYS)
+    || !isThemePreference(value.preference)
+    || typeof value.palette !== 'string'
+    || !PALETTE_ID_PATTERN.test(value.palette)
+    || !isCustomPalette(value.customPalette)) {
+    throw new TypeError('theme settings must contain only supported preference, palette, and Custom fields')
+  }
 }

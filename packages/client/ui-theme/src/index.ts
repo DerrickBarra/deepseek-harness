@@ -6,7 +6,7 @@ import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { injectBootTheme } from './boot-theme.ts'
 import {
   DEFAULT_CUSTOM_PALETTE, DEFAULT_PALETTE_ID, DEFAULT_PREFERENCE,
-  THEME_SETTINGS_NAMESPACE, ThemeSettingsSchema, type CustomPalette, type ThemeSettings,
+  THEME_SETTINGS_NAMESPACE, ThemeSettingsSchema, type ThemeSettings, validateThemeSettings,
 } from './theme-settings.ts'
 
 export {
@@ -25,7 +25,7 @@ function readThemeSettings(ctx: Context): ThemeSettings {
   return section ?? {
     preference: DEFAULT_PREFERENCE,
     palette: DEFAULT_PALETTE_ID,
-    customPalette: DEFAULT_CUSTOM_PALETTE as CustomPalette,
+    customPalette: DEFAULT_CUSTOM_PALETTE,
   }
 }
 
@@ -36,7 +36,7 @@ function readThemeSettings(ctx: Context): ThemeSettings {
  */
 export function apply(ctx: Context): void {
   ctx.inject(['settings'], (settingsCtx) => {
-    settingsCtx.settings.register(THEME_NAMESPACE, ThemeSettingsSchema)
+    settingsCtx.settings.register(THEME_NAMESPACE, ThemeSettingsSchema, { validate: validateThemeSettings })
   })
   ctx.inject(['webServer'], (httpCtx) => {
     httpCtx.effect(

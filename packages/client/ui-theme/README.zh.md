@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-主题插件：基于 --dsw-* token 基础样式表（静态尺度 + 别名语义层）的 ThemeRuntime。服务拥有两个彼此独立的持久化轴：`light`／`dark`／`system` 选择明暗模式，品牌类型 `ThemePaletteId` 则选择成对的浅色／深色语义 token 覆盖。已注册配色方案是可撤销的浏览器贡献，但所选 id 独立持久化；注册消失时界面显示默认配色而不删除持久化 id，重新注册后会自动恢复。内置“自定义”配色为每个模式保存六个严格 `#RRGGBB` 语义值（强调色、应用背景、浮层表面、侧边栏、主要文字、次要文字），通过支持键盘导航的“浅色”和“深色”标签页编辑，并在切换标签页时保留成对草稿；预览、保存、重置与取消仍然可用，且不显示对比度警告。不可变 `ThemeSnapshot` 通过 `theme/change` 发布，ui-layout 将解析后的快照应用到 DOM。该持久化边界由[Host settings 支撑的偏好决策](../../../.agents/notes/implemented/bug-fix/2026-08-06-host-backed-web-preferences.md)拥有。
+主题插件：基于 --dsw-* token 基础样式表（静态尺度 + 别名语义层）的 ThemeRuntime。服务拥有两个彼此独立的持久化轴：`light`／`dark`／`system` 选择明暗模式，品牌类型 `ThemePaletteId` 则选择成对的浅色／深色语义 token 覆盖。已注册配色方案是可撤销的浏览器贡献，但所选 id 独立持久化；注册消失时界面显示默认配色而不删除持久化 id，重新注册后会自动恢复。内置“自定义”配色为每个模式保存六个严格 `#RRGGBB` 语义值（强调色、应用背景、浮层表面、侧边栏、主要文字、次要文字），通过支持键盘导航的“浅色”和“深色”标签页编辑，并在切换标签页时保留成对草稿；预览、保存、重置与取消仍然可用，且不显示对比度警告。其持久化段会拒绝段、“自定义”、“浅色”和“深色”各层级的未知字段，因此外部文档编辑和 Host 写入只能使用文档列出的语义设置。不可变 `ThemeSnapshot` 通过 `theme/change` 发布，ui-layout 将解析后的快照应用到 DOM。该持久化边界由[Host settings 支撑的偏好决策](../../../.agents/notes/implemented/bug-fix/2026-08-06-host-backed-web-preferences.md)拥有。
 
 当主机组合包含 HTTP 服务器时，主机侧紧接 `<body>` 起始标签注入同步引导代码。每份 index 响应会嵌入持久化明暗偏好、所选配色方案 id 与自定义值；浏览器先解析 `system`、选择基础 token 表，并在选择“自定义”时于外壳加载页渲染前应用其别名。仅存在于浏览器中的已注册配色方案在插件激活前显示默认配色。不含 HTTP 服务器的组合不受影响，激活后 ThemeRuntime 与 ui-layout 仍是权威来源。
 
