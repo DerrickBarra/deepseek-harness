@@ -262,7 +262,7 @@ function makeHarness(
   // Rows and the harness must observe the same chat-store instance.
   const chat = createChatStore().create()
   const transcriptView = createSnapshotStore<TranscriptViewMode>('compact')
-  const fileMentionProviders = createSnapshotStore<readonly { name: string; priority: number }[]>([])
+  const fileMentionRevision = createSnapshotStore(0)
   const t = makeTranslate(zh, commonZh)
   const toolOwners: Array<{
     callId: string
@@ -388,7 +388,7 @@ function makeHarness(
     useStore: bindSnapshotSelector(chat),
     actions: chat.actions,
     useTranscriptView: bindSnapshotSelector(transcriptView),
-    useFileMentionProviders: bindSnapshotSelector(fileMentionProviders),
+    useFileMentionRevision: bindSnapshotSelector(fileMentionRevision),
     renderSlot,
     SessionProvider: SessionProviderStub,
     viewRequest: null,
@@ -430,9 +430,7 @@ function makeHarness(
     setOutline: (value: unknown) => { outlineValue = value },
     chatScroll, forkAt, setSelection, toolOwners,
     setTranscriptView: (mode: TranscriptViewMode) => { transcriptView.set(mode) },
-    setFileMentionProviders: (providers: readonly { name: string; priority: number }[]) => {
-      fileMentionProviders.set(providers)
-    },
+    setFileMentionRevision: (revision: number) => { fileMentionRevision.set(revision) },
     setNodeRenderer: (renderer: React.ComponentProps<typeof ChatNodeSeat>['renderSlot']) => {
       nodeSlotOverride = renderer
     },
@@ -550,11 +548,11 @@ describe('Chat node rendering', () => {
     expect(view.queryByRole('button', { name: '打开 report.html' })).toBeNull()
 
     enabled = true
-    act(() => { h.setFileMentionProviders([{ name: 'spec', priority: 0 }]) })
+    act(() => { h.setFileMentionRevision(1) })
     expect(view.getByRole('button', { name: '打开 report.html' })).toBeTruthy()
 
     enabled = false
-    act(() => { h.setFileMentionProviders([]) })
+    act(() => { h.setFileMentionRevision(2) })
     expect(view.queryByRole('button', { name: '打开 report.html' })).toBeNull()
   })
 

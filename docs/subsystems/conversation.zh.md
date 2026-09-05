@@ -28,7 +28,7 @@ shell 拥有 View 选择，并在 binding 创建、被选为 current 或 View ro
 
 ## 已定稿 Chat 文件提及
 
-`ui-chat` 拥有可叠加的 `ctx.chatFileMentions` registry，供已定稿收尾消息的 Markdown 使用。provider 注册唯一名称、可选数字优先级与 `forClosing()` resolver factory；注册跟随调用方的 effect 生命周期。provider 按优先级升序和注册顺序运行，可逐 Turn 拒绝，并按行内代码 token 逐个 fallback。provider 异常会记录日志并跳过。有序 roster 以 observable snapshot 发布，因此 provider 的加入或移除会让已定稿消息重新渲染，而不更改 Session 数据。点击 opener 仍归 provider 所有；registry 不增加全局 opener。
+`ui-chat` 拥有可叠加的 `ctx.chatFileMentions` registry，供已定稿收尾消息的 Markdown 使用。provider 注册唯一名称、可选数字优先级与 `forClosing()` resolver factory；注册跟随调用方的 effect 生命周期。provider 按优先级升序和注册顺序运行，可逐 Turn 拒绝，并按行内代码 token 逐个 fallback。provider 异常会记录日志并跳过，非有限优先级则在注册前失败。内部 observable revision 会随 roster 改变，因此 provider 的加入或移除会让已定稿消息重新渲染，而不更改 Session 数据。点击 opener 仍归 provider 所有；registry 不增加全局 opener。
 
 ## 可回放 event family
 

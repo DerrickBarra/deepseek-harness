@@ -544,7 +544,7 @@ describe('plugin registration', () => {
       3,
       (path) => { opened.push(path) },
     )
-    expect(fileMentions.providers.getSnapshot()).toEqual([{ name: 'deliverables', priority: 0 }])
+    expect(fileMentions.changes.getSnapshot()).toBe(1)
     const mentions = fileMentions.forClosing(owner)
     mentions?.resolve('report.html')?.open()
     expect(opened).toEqual(['site/report.html'])
@@ -554,7 +554,7 @@ describe('plugin registration', () => {
     await fiber.dispose()
     expect(ctx.slots.entries('conversation.chat.turnTail')).toHaveLength(0)
     // Fiber teardown retracts only this provider; Chat's registry remains live.
-    expect(fileMentions.providers.getSnapshot()).toEqual([])
+    expect(fileMentions.changes.getSnapshot()).toBe(2)
   })
 
   it('queries the workspace opener lazily and replaces stale results after reconnect', async () => {

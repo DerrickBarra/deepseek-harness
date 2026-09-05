@@ -54,7 +54,7 @@ Chat 会在历史前插与 renderer 重新挂载时恢复语义锚点。读者�
 <a id="file-mention-providers"></a>
 ## 文件提及 provider
 
-`ctx.chatFileMentions.register()` 在调用方 effect 生命周期内加入一个名称唯一的 provider，并返回幂等 disposer。provider 按 `priority` 升序（默认 `0`）排列，同优先级保持注册顺序。provider 可返回 `undefined` 拒绝某个收尾 Turn；接受后，每个未解析的行内代码 token 会继续交给下一个 provider。初始化与解析异常会记录日志并跳过，而匹配结果仍保留所属 provider 提供的点击 opener。registry 会发布有序的名称与优先级 snapshot，因此 live roster 变化时，已经定稿的消息也会重新渲染。
+`ctx.chatFileMentions.register()` 在调用方 effect 生命周期内加入一个名称唯一的 provider，并返回幂等 disposer。provider 按 `priority` 升序（默认 `0`）排列，同优先级保持注册顺序。provider 可返回 `undefined` 拒绝某个收尾 Turn；接受后，每个未解析的行内代码 token 会继续交给下一个 provider。初始化与解析异常会记录日志并跳过，而匹配结果仍保留所属 provider 提供的点击 opener。registry 会发布内部 revision snapshot，因此 live roster 变化时，已经定稿的消息也会重新渲染。非有限优先级会在注册前失败。
 
 -----
 

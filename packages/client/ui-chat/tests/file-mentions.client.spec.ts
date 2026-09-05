@@ -45,12 +45,7 @@ describe('ChatFileMentionRegistry', () => {
       },
     })))
 
-    expect(registry.providers.getSnapshot()).toEqual([
-      { name: 'declines', priority: -1 },
-      { name: 'first', priority: 0 },
-      { name: 'second', priority: 0 },
-      { name: 'late', priority: 10 },
-    ])
+    expect(registry.changes.getSnapshot()).toBe(4)
     const resolver = registry.forClosing(OWNER)
     expect(resolver?.resolve('hit')).toBe(winner)
     expect(calls).toEqual(['first:hit', 'second:hit'])
@@ -63,12 +58,12 @@ describe('ChatFileMentionRegistry', () => {
     const ctx = new Context()
     const registry = new ChatFileMentionRegistry(ctx)
     const listener = vi.fn()
-    registry.providers.subscribe(listener)
+    registry.changes.subscribe(listener)
     const first = provider('same', undefined, () => undefined)
     const dispose = registry.register(first)
 
     expect(listener).toHaveBeenCalledOnce()
-    expect(registry.providers.getSnapshot()).toEqual([{ name: 'same', priority: 0 }])
+    expect(registry.changes.getSnapshot()).toBe(1)
     expect(registry.forClosing(OWNER)).toBeUndefined()
     expect(() => registry.register(provider('same', 2, () => undefined)))
       .toThrow('chat file-mention provider "same" is already registered')
@@ -76,11 +71,28 @@ describe('ChatFileMentionRegistry', () => {
     dispose()
     dispose()
     expect(listener).toHaveBeenCalledTimes(2)
-    expect(registry.providers.getSnapshot()).toEqual([])
+    expect(registry.changes.getSnapshot()).toBe(2)
     expect(() => registry.register(provider('same', 2, () => ({ resolve: () => undefined }))))
       .not.toThrow()
     expect(registry.forClosing(OWNER)?.resolve('missing')).toBeUndefined()
   })
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'rejects non-finite priority %s without changing the roster',
+    (priority) => {
+      const ctx = new Context()
+      const registry = new ChatFileMentionRegistry(ctx)
+      registry.register(provider('accepted', 0, () => ({ resolve: () => undefined })))
+      const revision = registry.changes.getSnapshot()
+
+      expect(() => registry.register(provider('invalid', priority, () => ({
+        resolve: () => mention('invalid.txt'),
+      })))).toThrow('chat file-mention provider "invalid" priority must be finite')
+      expect(registry.changes.getSnapshot()).toBe(revision)
+      expect(registry.forClosing(OWNER)?.resolve('token')).toBeUndefined()
+      expect(() => registry.register(provider('invalid', 1, () => undefined))).not.toThrow()
+    },
+  )
 
   it('logs setup and resolution exceptions and continues to later providers', () => {
     const ctx = new Context()
@@ -111,9 +123,9 @@ describe('ChatFileMentionRegistry', () => {
       },
     })
     await fiber.await()
-    expect(registry.providers.getSnapshot()).toEqual([{ name: 'fiber', priority: 0 }])
+    expect(registry.changes.getSnapshot()).toBe(1)
 
     await fiber.dispose()
-    expect(registry.providers.getSnapshot()).toEqual([])
+    expect(registry.changes.getSnapshot()).toBe(2)
   })
 })

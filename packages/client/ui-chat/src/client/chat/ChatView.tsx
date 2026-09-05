@@ -217,7 +217,7 @@ const ChatNodeList = memo(function ChatNodeList({ order, ...seatProps }: ChatNod
 export function ChatView({
   useSession, useChat, useChatNode, useChatNodeProcess, useSessions, useStore, actions, renderSlot,
   sessionId, openFile, loadOlder, loadThrough, loadImage, openView, chatScroll, forkAt, fileMentions,
-  useTranscriptView, useFileMentionProviders, useProjection, t,
+  useTranscriptView, useFileMentionRevision, useProjection, t,
 }: ChatViewSlotProps) {
   const order = useChat(s => s.order)
   const nodeStore = useChat(s => s.nodes)
@@ -243,10 +243,10 @@ export function ChatView({
   const loadingOlder = useSession(s => s.loadingOlder)
   const selectedCallId = useStore(s => s.selection?.callId)
   const compactTranscript = useTranscriptView(mode => mode === 'compact')
-  const fileMentionProviderRoster = useFileMentionProviders(providers => providers)
+  const fileMentionRevision = useFileMentionRevision(revision => revision)
   const currentFileMentions = useCallback(
     (owner: Parameters<typeof fileMentions>[0]) => fileMentions(owner),
-    [fileMentions, fileMentionProviderRoster],
+    [fileMentions, fileMentionRevision],
   )
   const inspectCall = useCallback((callId: string) => {
     openView('trajectory', callId)

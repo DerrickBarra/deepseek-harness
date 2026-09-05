@@ -113,7 +113,7 @@ export function apply(ctx: Context): void {
         return {
           hooks: {
             transcriptView: transcriptView.mode,
-            fileMentionProviders: fileMentions.providers,
+            fileMentionRevision: fileMentions.changes,
           },
           keyedHooks: {
             chatNode: key => chat.getSnapshot().nodes.source(key),

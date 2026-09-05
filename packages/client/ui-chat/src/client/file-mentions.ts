@@ -2,9 +2,7 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
-import type {
-  ChatFileMentionProvider, ChatFileMentionProviderSnapshot, ChatFileMentions, TurnTailOwnerProps,
-} from './contract/slots.ts'
+import type { ChatFileMentionProvider, ChatFileMentions, TurnTailOwnerProps } from './contract/slots.ts'
 
 interface ProviderEntry {
   readonly provider: ChatFileMentionProvider
@@ -14,7 +12,7 @@ interface ProviderEntry {
 
 interface LiveState {
   readonly entries: Map<string, ProviderEntry>
-  readonly providers: ReturnType<typeof createSnapshotStore<readonly ChatFileMentionProviderSnapshot[]>>
+  readonly changes: ReturnType<typeof createSnapshotStore<number>>
   nextOrder: number
 }
 
@@ -22,7 +20,7 @@ interface LiveState {
 export class ChatFileMentionRegistry extends Service implements ChatFileMentions {
   private readonly live: LiveState = {
     entries: new Map(),
-    providers: createSnapshotStore<readonly ChatFileMentionProviderSnapshot[]>([]),
+    changes: createSnapshotStore(0),
     nextOrder: 0,
   }
 
@@ -31,9 +29,9 @@ export class ChatFileMentionRegistry extends Service implements ChatFileMentions
     super(ctx, 'chatFileMentions')
   }
 
-  /** @inheritdoc */
-  get providers() {
-    return this.live.providers
+  /** Internal invalidation source bound into the Chat View registration. */
+  get changes() {
+    return this.live.changes
   }
 
   /** @inheritdoc */
@@ -42,9 +40,13 @@ export class ChatFileMentionRegistry extends Service implements ChatFileMentions
     if (live.entries.has(provider.name)) {
       throw new Error(`chat file-mention provider "${provider.name}" is already registered`)
     }
+    const priority = provider.priority ?? 0
+    if (!Number.isFinite(priority)) {
+      throw new RangeError(`chat file-mention provider "${provider.name}" priority must be finite`)
+    }
     const entry: ProviderEntry = {
       provider,
-      priority: provider.priority ?? 0,
+      priority,
       order: live.nextOrder++,
     }
     const dispose = this.ctx.effect(() => {
@@ -91,10 +93,7 @@ export class ChatFileMentionRegistry extends Service implements ChatFileMentions
   }
 
   private publish(): void {
-    this.live.providers.set(this.sortedEntries().map(({ provider, priority }) => ({
-      name: provider.name,
-      priority,
-    })))
+    this.live.changes.set(this.live.changes.getSnapshot() + 1)
   }
 
   private warn(name: string, operation: string, error: unknown): void {

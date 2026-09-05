@@ -10,11 +10,11 @@ Status: implemented
 
 ## 决定
 
-ui-chat 拥有可叠加的具名 provider registry `ctx.chatFileMentions`。每个公开 `ChatFileMentionProvider` 提供 live 状态下唯一的 `name`、默认值为 `0` 的可选数字 `priority`，以及 `forClosing(owner)`。`register()` 把贡献绑定到调用方 Cordis effect，返回幂等 disposer，并拒绝重复的 live 名称。roster 按优先级升序排列，同优先级保持注册顺序。
+ui-chat 拥有可叠加的具名 provider registry `ctx.chatFileMentions`。每个公开 `ChatFileMentionProvider` 提供 live 状态下唯一的 `name`、默认值为 `0` 的可选有限数字 `priority`，以及 `forClosing(owner)`。`register()` 把贡献绑定到调用方 Cordis effect，返回幂等 disposer，拒绝重复的 live 名称，并在安装 effect 前拒绝非有限优先级。roster 按优先级升序排列，同优先级保持注册顺序。
 
 `forClosing()` 按 roster 顺序让 provider 为收尾 Turn 准备 resolver。返回 `undefined` 只拒绝该 Turn。接受后的 resolver 针对每个行内代码 token 以相同顺序运行，未解析 token 会继续交给下一个 resolver。provider 初始化与解析异常会记录日志并跳过，因此一个 provider 无法压制后续贡献方。匹配结果会原样通过，包括 provider 自己拥有的点击 opener；registry 不定义全局 opener。
 
-registry 发布由 provider 名称与优先级组成、identity 稳定的有序 observable snapshot。Chat 通过其注册拥有的 hook 绑定该 source，并把 snapshot 纳入收尾消息 resolver identity，因此加入或释放 provider 会重新渲染已定稿消息，而普通 transcript 追加仍保留缓存的 Markdown parse。该状态只属于 Client presentation，不增加 Session、wire、schema 或模型可见数据。
+registry 发布内部 observable revision。Chat 通过其注册拥有的 hook 绑定该 source，并把 revision 纳入收尾消息 resolver identity，因此加入或释放 provider 会重新渲染已定稿消息，而普通 transcript 追加仍保留缓存的 Markdown parse。该状态只属于 Client presentation，不增加 Session、wire、schema 或模型可见数据。
 
 ui-deliverables 以优先级 `0` 注册 stock `deliverables` provider。其成功修改词表、精确路径与唯一 basename 匹配、本地化标签、opener callback、产出文件行和模型指引均保持不变。
 
@@ -27,4 +27,4 @@ ui-deliverables 以优先级 `0` 注册 stock `deliverables` provider。其成�
 
 ## 后果
 
-多个独立加载的功能可以增加收尾消息文件提及，而无需替换 deliverables。优先级提供确定仲裁，同优先级注册保持稳定；异常得到隔离，Cordis 释放/HMR 只移除调用方自己的贡献。公开 snapshot 只暴露名称与优先级，不暴露 resolver 函数，从而保留可序列化的渲染失效值。聚焦 registry 测试固定排序、拒绝、fallback、异常隔离、重复名称、发布、幂等释放与调用方 fiber teardown；Chat component coverage 固定已定稿消息重新渲染，正式 Web 组合测试继续固定 deliverables 行为。
+多个独立加载的功能可以增加收尾消息文件提及，而无需替换 deliverables。优先级提供确定仲裁，同优先级注册保持稳定；异常得到隔离，Cordis 释放/HMR 只移除调用方自己的贡献。observable revision 留在 Chat 内部，因此公开 registry 只暴露 provider 注册与收尾 Turn 解析。聚焦 registry 测试固定排序、拒绝、fallback、异常隔离、重复名称、发布、幂等释放与调用方 fiber teardown；实际 Slot 组合测试固定独立 provider fiber 挂载、释放与重新挂载期间的可点击 → 惰性 → 可点击渲染，正式 Web 组合测试继续固定 deliverables 行为。

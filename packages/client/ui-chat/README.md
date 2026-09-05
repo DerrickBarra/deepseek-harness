@@ -54,7 +54,7 @@ Chat restores semantic anchors across history prepend and renderer remounts. Whi
 <a id="file-mention-providers"></a>
 ## File mention providers
 
-`ctx.chatFileMentions.register()` adds a uniquely named provider for the caller's effect lifetime and returns an idempotent disposer. Providers run by ascending `priority` (default `0`), then registration order. A provider may decline a closing Turn by returning `undefined`; for an accepted Turn, each unresolved inline-code token falls through to the next provider. Setup and resolution exceptions are logged and skipped, while each returned match retains its provider-owned click opener. The registry publishes its ordered name-and-priority snapshot so already settled messages rerender when the live roster changes.
+`ctx.chatFileMentions.register()` adds a uniquely named provider for the caller's effect lifetime and returns an idempotent disposer. Providers run by ascending `priority` (default `0`), then registration order. A provider may decline a closing Turn by returning `undefined`; for an accepted Turn, each unresolved inline-code token falls through to the next provider. Setup and resolution exceptions are logged and skipped, while each returned match retains its provider-owned click opener. The registry publishes an internal revision snapshot so already settled messages rerender when the live roster changes. Non-finite priorities fail before registration.
 
 -----
 

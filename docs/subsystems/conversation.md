@@ -28,7 +28,7 @@ The shell owns View selection and resolves the registered preferred View or Chat
 
 ## Settled Chat file mentions
 
-`ui-chat` owns the additive `ctx.chatFileMentions` registry used by settled closing-message Markdown. A provider registers a unique name, optional numeric priority, and `forClosing()` resolver factory; registration follows the caller's effect lifetime. Providers run by ascending priority and registration order, may decline each Turn, and fall through per inline-code token. Provider exceptions are logged and skipped. The ordered roster is an observable snapshot, so adding or removing a provider invalidates already settled message renders without changing Session data. Providers retain ownership of click openers; the registry does not add a global opener.
+`ui-chat` owns the additive `ctx.chatFileMentions` registry used by settled closing-message Markdown. A provider registers a unique name, optional numeric priority, and `forClosing()` resolver factory; registration follows the caller's effect lifetime. Providers run by ascending priority and registration order, may decline each Turn, and fall through per inline-code token. Provider exceptions are logged and skipped, while a non-finite priority fails before registration. An internal observable revision changes with the roster, so adding or removing a provider invalidates already settled message renders without changing Session data. Providers retain ownership of click openers; the registry does not add a global opener.
 
 ## Replayable event families
 

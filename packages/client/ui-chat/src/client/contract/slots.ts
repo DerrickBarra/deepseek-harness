@@ -46,34 +46,37 @@ export interface AssistantActionOwnerProps {
 export interface ChatFileMentionProvider {
   /** Unique name among live providers. */
   readonly name: string
-  /** Ascending election rank; providers at the same rank retain registration order. */
+  /**
+   * Finite numeric rank, defaulting to `0`. Lower priorities resolve first;
+   * equal priorities retain registration order.
+   */
   readonly priority?: number | undefined
   /**
-   * Prepare this provider's resolver for one closing Turn.
+   * Prepare this provider's resolver for one closing Turn. Returning
+   * `undefined` declines only that Turn. The registry logs and skips a thrown
+   * setup error, allowing later providers to participate.
    * @param owner - closing-Turn identity and provider-owned file opener input.
    * @returns resolver when this provider accepts the Turn, otherwise `undefined`.
    */
   forClosing(owner: TurnTailOwnerProps): MarkdownFileMentions | undefined
 }
 
-/** Serializable entry in the live provider roster. */
-export interface ChatFileMentionProviderSnapshot {
-  readonly name: string
-  readonly priority: number
-}
-
 /** Additive prose file-mention registry consumed by Chat. */
 export interface ChatFileMentions {
-  /** Live ordered provider roster used to invalidate settled-message rendering. */
-  readonly providers: ObservableSnapshot<readonly ChatFileMentionProviderSnapshot[]>
   /**
-   * Register a provider for the caller's effect lifetime.
-   * @param provider - uniquely named provider and optional priority.
+   * Register a provider for the caller's effect lifetime. Providers resolve by
+   * ascending finite priority, then registration order for ties.
+   * @param provider - uniquely named provider and optional finite priority.
    * @returns idempotent disposer.
+   * @throws {Error} when another live provider owns the same name.
+   * @throws {RangeError} when `priority` is not finite.
    */
   register(provider: ChatFileMentionProvider): () => void
   /**
-   * Compose every accepting provider for one closing Turn.
+   * Compose every provider that accepts one closing Turn. For each inline-code
+   * token, an unresolved result falls through in provider order. Provider setup
+   * and token-resolution errors are logged and skipped without suppressing
+   * later providers.
    * @param owner - closing-Turn identity and file opener.
    * @returns fallback resolver when any provider accepts the Turn.
    */
@@ -159,8 +162,8 @@ export interface ChatViewInjected {
   hooks: {
     /** Persisted completed-Turn transcript presentation. */
     transcriptView: SnapshotStore<TranscriptViewMode>
-    /** Ordered live provider roster; changes invalidate settled message resolvers. */
-    fileMentionProviders: ObservableSnapshot<readonly ChatFileMentionProviderSnapshot[]>
+    /** Registry revision; changes invalidate settled message resolvers. */
+    fileMentionRevision: ObservableSnapshot<number>
   }
   keyedHooks: {
     /** Resolve the stable source for one Chat Node key. */
