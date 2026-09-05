@@ -14,7 +14,7 @@ Status: implemented
 
 **正文提及只在与产出文件对得上时才成为链接。**[产物行的决定](2026-07-31-web-workspace-file-links.zh.md)否决过「把收尾消息链接化」，理由是渲染不能依赖模型把路径写得可识别；这一点不变。产物行仍是权威的、不依赖正文的记录。本特性只是给同一份 `locations` 词表增加第二个消费者：`producedFileMentions` 按精确路径解析行内代码 token，或当 token 恰好是且仅是一条产出路径的 basename 时解析。两条路径共享的 basename 保持死文本而不猜测，命名了本轮没写过的文件的 token 同样保持死文本——提及链接永远不会 404。
 
-**渲染器不持有词表，提供方是 deliverables 插件。**`MarkdownText` 接受可选的 `MarkdownFileMentions` 解析器，对行内代码 token 询问它——URL 提升优先于解析器，且绝不在锚点内部（按钮不能嵌套在链接里）。什么算文件名的决定藏在 ui-conversation 经 `ctx.get` 触达的可选 `chatFileMentions` 服务背后：ui-deliverables 在其 turn-tail chain 注册项旁提供该服务，因此 cordis.yml 中的一行同时把产物行和正文链接组合进来或去掉，ui-primitives 不引入任何会话概念。提及只作用于已定稿的渲染——流式缓存不能固化可能过期的 handler，而且词表在轮次收尾前并不最终。消费方按收尾 seq 而非不断增长的 transcript（文本记录）记忆化解析器，因此已定稿消息的缓存解析在流式追加中得以保留。
+**渲染器不持有词表，deliverables 贡献 stock provider。**`MarkdownText` 接受可选的 `MarkdownFileMentions` 解析器，对行内代码 token 询问它——URL 提升优先于解析器，且绝不在锚点内部（按钮不能嵌套在链接里）。什么算文件名由 ui-chat 的可叠加 `chatFileMentions` registry 决定（[provider registry 决策](../architecture/2026-09-05-chat-file-mention-provider-registry.zh.md)）：ui-deliverables 在其 turn-tail chain 注册项旁注册 priority-0 provider，因此 cordis.yml 中的一行仍会同时把产物行和对应正文链接组合进来或去掉，其他 provider 可以共存，ui-primitives 也不引入任何会话概念。提及只作用于已定稿的渲染——流式缓存不能固化可能过期的 handler，而且词表在轮次收尾前并不最终。消费方按收尾消息 identity 与 live provider roster 记忆化每个解析器，因此已定稿消息的缓存解析在流式追加中得以保留，但会在 provider 变化时刷新。
 
 **提供方也拥有其所接受语法的模型指引。**ui-deliverables 的 Node 侧注册静态段落 `ui:deliverable-file-references`，要求模型在最终回复中点名来自成功创建或修改调用的主要文件，并将这些文件以及正文中提到的其他本轮变更文件写成 Markdown 行内代码：使用文件工具采用的精确路径，或仅在 basename 能唯一指代本轮文件时使用 basename。该指引刻意不涉及无关的本地路径格式。正式提供的组合中只有 Web patch 加载 ui-deliverables，因此提示词只存在于渲染器存在的地方；移除该包会同时移除两者。模型遗漏提及时，文件行仍承担正确性兜底；匹配词表仍拒绝成功修改记录之外的所有文件。
 
@@ -23,7 +23,7 @@ Status: implemented
 - **对全部正文跑路径形状的正则**——会把随口提到的 `package.json` 和从未写过的示例都链接上；每个误报都会带来一次点击，结果要么什么也没打开，要么打开了错误文件。词表方案不可能产生死链。
 - **链接后缀匹配（子目录列表里把 `out/index.html` 写作 `index.html`）**——暂缓；精确路径加唯一 basename 已覆盖观察到的收尾消息形态，之后放宽匹配器不会破坏这道 seam。
 - **在 ui-primitives 里对传入的路径列表做解析**——把匹配策略放进通用渲染器，其他消费方会被动继承。解析器约定让策略留在持有者手里。
-- **经由 turn-tail chain 传递词表**——chain 是消息下方的渲染派发；提及要装饰的是消息内部的 markdown，只有抵达 MarkdownText 的数据才做得到。可选服务就是那条数据通路，它的缺席即关闭态。
+- **经由 turn-tail chain 传递词表**——chain 是消息下方的渲染派发；提及要装饰的是消息内部的 markdown，只有抵达 MarkdownText 的数据才做得到。Chat 持有的 provider registry 就是那条数据通路，空 roster 即关闭态。
 - **在 dsh-web-app 中注册指引**——会让应用组合包描述某个功能特有的渲染语法，也允许渲染器与提示词分别组合或产生漂移。该功能包现有的 Node 侧让 cordis.yml 中的一项可以共同持有两者。
 - **增加一次轮次结束后的模型调用来识别输出**——即使最终回复已经拥有所需的文件工具历史，仍会增加延迟和一次生成。一个静态提示词段落可以留在可复用前缀中，并要求现有的最终生成输出渲染器接受的写法。
 

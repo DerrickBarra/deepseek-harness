@@ -161,12 +161,15 @@ it('boots the built plugin graph and renders a fixture session end to end', asyn
   }
 })
 
-it('boots without ui-chat and does not select another conversation view implicitly', async () => {
-  mountAssembledApp('?fixture', { exclude: ['@deepseek-ai/dsh-client-ui-chat'] })
+it('boots without ui-chat or its deliverables provider and does not select another conversation view implicitly', async () => {
+  mountAssembledApp('?fixture', {
+    exclude: ['@deepseek-ai/dsh-client-ui-chat', '@deepseek-ai/dsh-client-ui-deliverables'],
+  })
 
   const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
   const boot = Reflect.get(window, '__DSH_BOOT__') as { entries: Array<{ id: string }> } | undefined
   expect(boot?.entries.some(entry => entry.id === '@deepseek-ai/dsh-client-ui-chat')).toBe(false)
+  expect(boot?.entries.some(entry => entry.id === '@deepseek-ai/dsh-client-ui-deliverables')).toBe(false)
   const sessionTitle = await within(tree).findByText('Fixture 历史会话')
   fireEvent.click(sessionTitle)
   await waitFor(() => {

@@ -19,7 +19,8 @@ import type {
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { apply as applyLocale, inject as localeInject } from '@deepseek-ai/dsh-client-locale/client'
-import type { ChatFileMentions, TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-chat/client'
+import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-chat/client'
+import { ChatFileMentionRegistry } from '@deepseek-ai/dsh-client-ui-chat/src/client/file-mentions.ts'
 import { makeTranslate, RemoteError, stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
 import { ProducedFiles, type ProducedFilesInjected, type ProducedFilesProps } from '../src/client/ProducedFiles.tsx'
 import {
@@ -499,6 +500,7 @@ describe('producedFileMentions resolver', () => {
 describe('plugin registration', () => {
   it('registers the tail entry and fiber disposal removes it', async () => {
     const ctx = new Context()
+    const fileMentions = new ChatFileMentionRegistry(ctx)
     await ctx.plugin(SlotRegistry).await()
     new UiConversation(ctx, { binding: () => undefined } as never)
     // The owning view's child declaration, stood up by a bench root entry.
@@ -542,21 +544,22 @@ describe('plugin registration', () => {
       3,
       (path) => { opened.push(path) },
     )
-    const service = (ctx as unknown as { get(name: string): ChatFileMentions | undefined }).get('chatFileMentions')
-    const mentions = service?.forClosing(owner)
+    expect(fileMentions.providers.getSnapshot()).toEqual([{ name: 'deliverables', priority: 0 }])
+    const mentions = fileMentions.forClosing(owner)
     mentions?.resolve('report.html')?.open()
     expect(opened).toEqual(['site/report.html'])
     // A turn that produced nothing yields no vocabulary at all.
-    expect(service?.forClosing(tailOwner(undefined, 2))).toBeUndefined()
+    expect(fileMentions.forClosing(tailOwner(undefined, 2))).toBeUndefined()
 
     await fiber.dispose()
     expect(ctx.slots.entries('conversation.chat.turnTail')).toHaveLength(0)
-    // Fiber teardown retracts the service: the consumer's ctx.get sees the off state.
-    expect((ctx as unknown as { get(name: string): unknown }).get('chatFileMentions')).toBeUndefined()
+    // Fiber teardown retracts only this provider; Chat's registry remains live.
+    expect(fileMentions.providers.getSnapshot()).toEqual([])
   })
 
   it('queries the workspace opener lazily and replaces stale results after reconnect', async () => {
     const ctx = new Context()
+    new ChatFileMentionRegistry(ctx)
     await ctx.plugin(SlotRegistry).await()
     new UiConversation(ctx, { binding: () => undefined } as never)
     ctx.slots.register({

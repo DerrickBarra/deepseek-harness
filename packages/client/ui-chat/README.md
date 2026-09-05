@@ -8,7 +8,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The browser Chat target for Conversation assembly. It registers Chat event definitions and snapshot construction, supplies `useChat`, renders transcript nodes and details, and owns Chat-specific stores, actions, localization, and scroll restoration; historical image URLs resolve through the Conversation-owned per-session cache (`ctx.uiConversation.imageUrl`). Its Assistant and Turn Tail definitions fold packed historical Assistant runs without expanding their members. Steering classification retains only next-step Inbox IDs through persistent splice state; next-turn splices create no Chat Context. Local submission echoes (`SessionSnapshot.pendingSubmissions`) retain the surface selected when the submit begins: transcript echoes render at the flow tail, steering echoes render with the pending-steering marker, and queued echoes stay out of Chat. Each echo is hidden per render once a user/steering node or queue occurrence carries its prompt `rpcId`, so the handoff is atomic.
+The browser Chat target for Conversation assembly. It registers Chat event definitions and snapshot construction, supplies `useChat`, renders transcript nodes and details, owns the additive `ctx.chatFileMentions` provider registry, and owns Chat-specific stores, actions, localization, and scroll restoration; historical image URLs resolve through the Conversation-owned per-session cache (`ctx.uiConversation.imageUrl`). Its Assistant and Turn Tail definitions fold packed historical Assistant runs without expanding their members. Steering classification retains only next-step Inbox IDs through persistent splice state; next-turn splices create no Chat Context. Local submission echoes (`SessionSnapshot.pendingSubmissions`) retain the surface selected when the submit begins: transcript echoes render at the flow tail, steering echoes render with the pending-steering marker, and queued echoes stay out of Chat. Each echo is hidden per render once a user/steering node or queue occurrence carries its prompt `rpcId`, so the handoff is atomic.
 
 ## Table of Contents
 
@@ -16,6 +16,7 @@ The browser Chat target for Conversation assembly. It registers Chat event defin
 - [Turn token usage](#turn-token-usage)
 - [Turn Process Folding](#turn-process-folding)
 - [Scroll ownership](#scroll-ownership)
+- [File mention providers](#file-mention-providers)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 - [Dev Note](#dev-note)
@@ -47,6 +48,13 @@ Settings → General exposes a persisted `Normal` / `Compact` conversation-displ
 ## Scroll ownership
 
 Chat restores semantic anchors across history prepend and renderer remounts. While the reader is pinned to the floor, `ResizeObserver` follows the new floor and selects the latest loaded Turn without reading row geometry. Once the reader moves away, flow-height changes preserve the top position and the reading-line geometry selects the active Turn. Turn-rail previews paint above sticky Markdown code-block banners, while the rail frame remains inside the transcript band above the composer ([loaded-Turn navigation](../../../.agents/notes/implemented/feature/2026-08-25-loaded-turn-chat-navigation.md)).
+
+-----
+
+<a id="file-mention-providers"></a>
+## File mention providers
+
+`ctx.chatFileMentions.register()` adds a uniquely named provider for the caller's effect lifetime and returns an idempotent disposer. Providers run by ascending `priority` (default `0`), then registration order. A provider may decline a closing Turn by returning `undefined`; for an accepted Turn, each unresolved inline-code token falls through to the next provider. Setup and resolution exceptions are logged and skipped, while each returned match retains its provider-owned click opener. The registry publishes its ordered name-and-priority snapshot so already settled messages rerender when the live roster changes.
 
 -----
 

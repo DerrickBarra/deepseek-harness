@@ -26,6 +26,10 @@ Each Session keeps a monotonic set of active targets. Creating or reading a targ
 
 The shell owns View selection and resolves the registered preferred View or Chat fallback before rendering when a binding is created or selected as current, and after View-roster changes. The assembler receives only the resolved target id and does not select Chat or another default target. A third-party View participates through the same selection and activation operations.
 
+## Settled Chat file mentions
+
+`ui-chat` owns the additive `ctx.chatFileMentions` registry used by settled closing-message Markdown. A provider registers a unique name, optional numeric priority, and `forClosing()` resolver factory; registration follows the caller's effect lifetime. Providers run by ascending priority and registration order, may decline each Turn, and fall through per inline-code token. Provider exceptions are logged and skipped. The ordered roster is an observable snapshot, so adding or removing a provider invalidates already settled message renders without changing Session data. Providers retain ownership of click openers; the registry does not add a global opener.
+
 ## Replayable event families
 
 Choose one stable business id before writing the Definition. Every event that contributes to the same Node must carry that id or derive it independently from its own payload; the client must never assign an update to “the latest unfinished” Context.

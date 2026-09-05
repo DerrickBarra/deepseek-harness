@@ -43,7 +43,7 @@ The closing prose carries the same vocabulary: an inline-code token resolves by 
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The Node half registers the static `ui:deliverable-file-references` system-prompt section asking the model to mention primary files from successful creation or modification calls and to write those and any other changed-file references as Markdown inline code. The browser half registers `ProducedFiles` into the chat view's `conversation.chat.turnTail` hole. `deliverablesDefinition` folds each Turn's successful first-party mutation calls into `DeliverablesTurnData` from the validated raw arguments of `write`, `edit`, and mutating `str_replace_editor` commands. Reads, deletes, unsupported tools, malformed calls, and failed results contribute nothing. A new mutation tool needs an explicit Client contribution before it joins the list. The package also provides the `chatFileMentions` service the chat view consults per closing message; composing the plugin out removes both surfaces and leaves the view's empty chain at zero cost.
+The Node half registers the static `ui:deliverable-file-references` system-prompt section asking the model to mention primary files from successful creation or modification calls and to write those and any other changed-file references as Markdown inline code. The browser half registers `ProducedFiles` into the chat view's `conversation.chat.turnTail` hole. `deliverablesDefinition` folds each Turn's successful first-party mutation calls into `DeliverablesTurnData` from the validated raw arguments of `write`, `edit`, and mutating `str_replace_editor` commands. Reads, deletes, unsupported tools, malformed calls, and failed results contribute nothing. A new mutation tool needs an explicit Client contribution before it joins the list. The package also registers its stock `deliverables` provider on Chat's `chatFileMentions` registry at priority `0`; composing the plugin out removes the row and provider together while the registry remains available to other contributors.
 
 </details>
 
@@ -99,4 +99,4 @@ None.
 
 </details>
 
-**Runtime invariant:** No companion is published. The prompt section, slot, dictionary, event definition, and optional service registrations are effect-owned with disposal proven by their plugin specs; this package owns no mutable state.
+**Runtime invariant:** No companion is published. The prompt section, slot, dictionary, event definition, and named provider registrations are effect-owned with disposal proven by their plugin specs; this package owns no mutable state.

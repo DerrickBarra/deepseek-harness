@@ -9,7 +9,7 @@ import type {
   InjectFace, KeyedSnapshotSelectorHook, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
   SlotHookFactory, SnapshotSelectorHook,
 } from '@deepseek-ai/dsh-client-ui-slots'
-import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { ObservableSnapshot, SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type { createChatStore } from '../stores.ts'
@@ -42,19 +42,47 @@ export interface AssistantActionOwnerProps {
   messageId: MessageId
 }
 
-/** Optional prose file-mention provider consumed by Chat. */
-export interface ChatFileMentions {
+/** One named source of settled closing-message file mentions. */
+export interface ChatFileMentionProvider {
+  /** Unique name among live providers. */
+  readonly name: string
+  /** Ascending election rank; providers at the same rank retain registration order. */
+  readonly priority?: number | undefined
   /**
-   * Resolve prose links for one closing Turn.
+   * Prepare this provider's resolver for one closing Turn.
+   * @param owner - closing-Turn identity and provider-owned file opener input.
+   * @returns resolver when this provider accepts the Turn, otherwise `undefined`.
+   */
+  forClosing(owner: TurnTailOwnerProps): MarkdownFileMentions | undefined
+}
+
+/** Serializable entry in the live provider roster. */
+export interface ChatFileMentionProviderSnapshot {
+  readonly name: string
+  readonly priority: number
+}
+
+/** Additive prose file-mention registry consumed by Chat. */
+export interface ChatFileMentions {
+  /** Live ordered provider roster used to invalidate settled-message rendering. */
+  readonly providers: ObservableSnapshot<readonly ChatFileMentionProviderSnapshot[]>
+  /**
+   * Register a provider for the caller's effect lifetime.
+   * @param provider - uniquely named provider and optional priority.
+   * @returns idempotent disposer.
+   */
+  register(provider: ChatFileMentionProvider): () => void
+  /**
+   * Compose every accepting provider for one closing Turn.
    * @param owner - closing-Turn identity and file opener.
-   * @returns link resolver when available.
+   * @returns fallback resolver when any provider accepts the Turn.
    */
   forClosing(owner: TurnTailOwnerProps): MarkdownFileMentions | undefined
 }
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
-    /** Optional prose file-mention provider. */
+    /** Additive prose file-mention provider registry. */
     chatFileMentions: ChatFileMentions
   }
 }
@@ -131,6 +159,8 @@ export interface ChatViewInjected {
   hooks: {
     /** Persisted completed-Turn transcript presentation. */
     transcriptView: SnapshotStore<TranscriptViewMode>
+    /** Ordered live provider roster; changes invalidate settled message resolvers. */
+    fileMentionProviders: ObservableSnapshot<readonly ChatFileMentionProviderSnapshot[]>
   }
   keyedHooks: {
     /** Resolve the stable source for one Chat Node key. */

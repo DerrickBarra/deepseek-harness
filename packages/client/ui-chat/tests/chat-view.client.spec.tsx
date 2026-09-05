@@ -262,6 +262,7 @@ function makeHarness(
   // Rows and the harness must observe the same chat-store instance.
   const chat = createChatStore().create()
   const transcriptView = createSnapshotStore<TranscriptViewMode>('compact')
+  const fileMentionProviders = createSnapshotStore<readonly { name: string; priority: number }[]>([])
   const t = makeTranslate(zh, commonZh)
   const toolOwners: Array<{
     callId: string
@@ -387,6 +388,7 @@ function makeHarness(
     useStore: bindSnapshotSelector(chat),
     actions: chat.actions,
     useTranscriptView: bindSnapshotSelector(transcriptView),
+    useFileMentionProviders: bindSnapshotSelector(fileMentionProviders),
     renderSlot,
     SessionProvider: SessionProviderStub,
     viewRequest: null,
@@ -428,6 +430,9 @@ function makeHarness(
     setOutline: (value: unknown) => { outlineValue = value },
     chatScroll, forkAt, setSelection, toolOwners,
     setTranscriptView: (mode: TranscriptViewMode) => { transcriptView.set(mode) },
+    setFileMentionProviders: (providers: readonly { name: string; priority: number }[]) => {
+      fileMentionProviders.set(providers)
+    },
     setNodeRenderer: (renderer: React.ComponentProps<typeof ChatNodeSeat>['renderSlot']) => {
       nodeSlotOverride = renderer
     },
@@ -528,6 +533,29 @@ describe('Chat node rendering', () => {
     fireEvent.click(mention)
     // The vocabulary was built from the closing message's own owner currency.
     expect(h.openFile).toHaveBeenCalledWith('for-seq-4/site/report.html')
+  })
+
+  it('rerenders settled mentions when the live provider roster changes', () => {
+    const h = makeHarness({
+      nodes: [user(1, 'build it'), assistant(2, 'Wrote `report.html`.', 1)],
+      turnEnds: new Map([[1, 2]]),
+    })
+    let enabled = false
+    h.props.fileMentions = () => enabled ? {
+      resolve: value => value === 'report.html' ? {
+        open: () => {}, label: '打开 report.html', title: 'report.html',
+      } : undefined,
+    } : undefined
+    const view = render(<h.ChatView {...h.props} />)
+    expect(view.queryByRole('button', { name: '打开 report.html' })).toBeNull()
+
+    enabled = true
+    act(() => { h.setFileMentionProviders([{ name: 'spec', priority: 0 }]) })
+    expect(view.getByRole('button', { name: '打开 report.html' })).toBeTruthy()
+
+    enabled = false
+    act(() => { h.setFileMentionProviders([]) })
+    expect(view.queryByRole('button', { name: '打开 report.html' })).toBeNull()
   })
 
   it('formatRunDuration localizes units and floors partial seconds', () => {

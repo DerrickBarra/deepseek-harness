@@ -43,7 +43,7 @@ kind: "package-reference"
 <details>
 <summary>实现细节——点击展开</summary>
 
-Node 半部注册静态 `ui:deliverable-file-references` 系统提示词段，要求模型点名成功创建或修改的主要文件，并把这些文件以及正文中提到的其他本轮变更文件写成 Markdown 行内代码。浏览器半部把 `ProducedFiles` 注册进 chat 视图的 `conversation.chat.turnTail` 洞。`deliverablesDefinition` 根据 `write`、`edit` 和有修改作用的 `str_replace_editor` 命令中经过校验的原始参数，把每个轮次成功的第一方修改调用折叠进 `DeliverablesTurnData`。读取、删除、不受支持的工具、格式错误的调用和失败结果不贡献任何条目。新的修改工具必须增加显式 Client contribution 才能加入列表。本包还提供 chat 视图按收尾消息查询的 `chatFileMentions` 服务；把插件组合出去会同时移除两个表面，视图的空链以零成本留下。
+Node 半部注册静态 `ui:deliverable-file-references` 系统提示词段，要求模型点名成功创建或修改的主要文件，并把这些文件以及正文中提到的其他本轮变更文件写成 Markdown 行内代码。浏览器半部把 `ProducedFiles` 注册进 chat 视图的 `conversation.chat.turnTail` 洞。`deliverablesDefinition` 根据 `write`、`edit` 和有修改作用的 `str_replace_editor` 命令中经过校验的原始参数，把每个轮次成功的第一方修改调用折叠进 `DeliverablesTurnData`。读取、删除、不受支持的工具、格式错误的调用和失败结果不贡献任何条目。新的修改工具必须增加显式 Client contribution 才能加入列表。本包还以优先级 `0` 在 Chat 的 `chatFileMentions` registry 上注册 stock `deliverables` provider；把插件组合出去会同时移除文件行和该 provider，而 registry 仍可供其他贡献方使用。
 
 </details>
 
@@ -99,4 +99,4 @@ Node 半部注册静态 `ui:deliverable-file-references` 系统提示词段，�
 
 </details>
 
-**运行时不变式：** 不发布伴生入口。prompt section、slot、dictionary、event definition 与可选 service 注册都归 effect 所有，释放由插件测试证明；本包不持有可变状态。
+**运行时不变式：** 不发布伴生入口。prompt section、slot、dictionary、event definition 与具名 provider 注册都归 effect 所有，释放由插件测试证明；本包不持有可变状态。

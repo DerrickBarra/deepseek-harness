@@ -32,6 +32,7 @@ import { createChatStore } from './stores.ts'
 import { TranscriptViewPolicy } from './transcript-view.ts'
 import { CHAT_SETTINGS_NAMESPACE, type ChatSettings } from '../chat-settings.ts'
 import { useTurnDataValue } from './chat/use-turn-data.ts'
+import { ChatFileMentionRegistry } from './file-mentions.ts'
 
 const CHAT_NODE_INJECT: ChatNodeTurnDataInjected = {
   hooks: {
@@ -52,6 +53,7 @@ export const inject = [
  * @param ctx - Client root context.
  */
 export function apply(ctx: Context): void {
+  const fileMentions = new ChatFileMentionRegistry(ctx)
   const chatSources = new WeakMap<SessionBinding, ObservableSnapshot<ChatSnapshot>>()
   const chatSource = (binding: SessionBinding): ObservableSnapshot<ChatSnapshot> => {
     let source = chatSources.get(binding)
@@ -109,7 +111,10 @@ export function apply(ctx: Context): void {
         const session = binding.session
         const chat = chatSource(binding)
         return {
-          hooks: { transcriptView: transcriptView.mode },
+          hooks: {
+            transcriptView: transcriptView.mode,
+            fileMentionProviders: fileMentions.providers,
+          },
           keyedHooks: {
             chatNode: key => chat.getSnapshot().nodes.source(key),
             chatNodeProcess: key => chat.getSnapshot().nodes.processSource(key),
@@ -118,7 +123,7 @@ export function apply(ctx: Context): void {
             actions.select(target)
             ctx.layout.openDetails()
           },
-          fileMentions: (owner: TurnTailOwnerProps) => ctx.get('chatFileMentions')?.forClosing(owner),
+          fileMentions: (owner: TurnTailOwnerProps) => fileMentions.forClosing(owner),
           openFile: async (path) => {
             const cwd = ctx.sessions.list.getSnapshot().byId[sessionId]?.cwd
             const result = await ctx.remote.session.openWorkspacePath({

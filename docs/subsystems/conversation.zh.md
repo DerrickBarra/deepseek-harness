@@ -26,6 +26,10 @@ Chat 与 Trajectory 可以识别同一个持久 event family，但各自保留�
 
 shell 拥有 View 选择，并在 binding 创建、被选为 current 或 View roster 变化时，于渲染前解析已注册的偏好 View 或 Chat fallback。assembler 只接收解析后的 target id，不自行选择 Chat 或其他默认 target。第三方 View 使用相同的选择与激活操作。
 
+## 已定稿 Chat 文件提及
+
+`ui-chat` 拥有可叠加的 `ctx.chatFileMentions` registry，供已定稿收尾消息的 Markdown 使用。provider 注册唯一名称、可选数字优先级与 `forClosing()` resolver factory；注册跟随调用方的 effect 生命周期。provider 按优先级升序和注册顺序运行，可逐 Turn 拒绝，并按行内代码 token 逐个 fallback。provider 异常会记录日志并跳过。有序 roster 以 observable snapshot 发布，因此 provider 的加入或移除会让已定稿消息重新渲染，而不更改 Session 数据。点击 opener 仍归 provider 所有；registry 不增加全局 opener。
+
 ## 可回放 event family
 
 编写 Definition 前先选定稳定的业务 id。构成同一个 Node 的每条事件都必须携带该 id，或只凭自身 payload 独立推导出该 id；Client 绝不能把 update 猜测为属于“最近一个未完成”的 Context。
