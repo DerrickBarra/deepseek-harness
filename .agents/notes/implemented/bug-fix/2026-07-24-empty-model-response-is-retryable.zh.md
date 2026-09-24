@@ -14,7 +14,7 @@ Status: implemented
 
 - `dsh-llm` 在 `CONTEXT_WINDOW_EXCEEDED_CODE`/`QUOTA_EXCEEDED_CODE` 之外，导出规范代码 `EMPTY_RESPONSE_CODE`（`'EMPTY_RESPONSE'`）。
 - `dsh-llm-pi-ai`（`mapStopReason`）：当终止性 `stop` 所对应的 assistant 消息没有内容块时，它会变成一个携带该代码的 `finish {kind: 'error'}`。上下文溢出检测在其适用场景中仍然优先（它先被检查，也是更具可操作性的归类）。
-- `dsh-llm-deepseek`（`translate`）：在 `[DONE]` 处，若 `stop`（或缺失）结束且没有打开过任何块，则同样变成该错误结束。仅含推理的流算作有内容，仍视为成功。
+- `dsh-llm-deepseek`（`translate`）：在 `[DONE]` 处，若 `stop`（或缺失）结束且没有打开过任何块，则同样变成该错误结束。仅含推理的流在适配器边界算作有内容；agent loop 会单独处理没有最终输出的正常停止（[决策](2026-09-24-reasoning-only-stop-retry.zh.md)）。
 - 由提供方定义的常规重试默认值包含 `EMPTY_RESPONSE`：这次尝试没有产生任何持久内容，因此重复它是安全的；部署方仍可通过 `retryableCodes` 将其移除，而 `dsh-llm-retry` 会执行解析后的策略。
 
 检测仅限于 `stop` 结束。内容为空的 `max-tokens` 保持其既有含义（pi-ai 已经把零输出的溢出场景归一化处理），`tool-calls` 在实践中不可能是空块，而 error／aborted 结束本身已经算失败。
@@ -27,7 +27,7 @@ Status: implemented
 
 **在 `llm/stream` waterfall（瀑布式事件）上做一个流转换插件。** 这种做法提供方无关且只需一份实现，但它为「每个适配器几行就能声明的边界事实」额外增加了一个包和相应接线，而且默认开启的行为仍需改动每一个 bundle。
 
-**把仅含空白或仅含推理的响应也当作空响应。** 作为过度设计予以否决：这类响应携带了模型产生的内容，把一个合法（哪怕无用）的响应误判为传输类失败，会在那些故意在推理之后停止的模型上引发重试循环。其范围严格限定为「零内容块」。
+**把仅含空白或仅含推理的响应也当作空响应。** 作为 `EMPTY_RESPONSE` 归类予以否决：这类响应携带了模型产生的内容，因此该提供方边界代码仍严格限定为零内容块。后续语义保护会处理更窄的仅推理正常停止情况，而不会把它重新标记为传输／提供方空响应（[决策](2026-09-24-reasoning-only-stop-retry.zh.md)）。
 
 ## 后果
 

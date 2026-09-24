@@ -33,6 +33,7 @@ import { joinContextSections, renderContextSections, renderPrompt } from '@deeps
 import type { PromptAssembly } from '@deepseek-ai/dsh-system-prompt'
 import type { Context } from '@deepseek-ai/cordis'
 import { RuntimeContextProjection } from './runtime-context.ts'
+import { EMPTY_ANSWER_TAIL_CHARS } from './constants.ts'
 import { executeToolCalls } from './tool-calls.ts'
 
 type Phase =
@@ -82,6 +83,7 @@ export class ReactLoopAgent implements Agent {
     public readonly id: SessionId,
     public readonly options: AgentOptions,
     public readonly session: Session,
+    private readonly reasoningOnlyStopRetries: () => number,
   ) {
     this.dispatch = agentEvents(loopCtx, this)
     this.inbox = new Inbox(session, {
@@ -335,6 +337,7 @@ export class ReactLoopAgent implements Agent {
     const { turn, step, abort: { signal } } = this.phase
     signal.throwIfAborted()
     const system = renderPrompt(assembly)
+    let reasoningOnlyStops = 0
 
     while (true) {
       const { request, preparedCall } = await this.buildRequest(
@@ -397,6 +400,30 @@ export class ReactLoopAgent implements Agent {
           ...assembler.replayState !== undefined ? { replayState: assembler.replayState } : {},
         },
       })
+      const reasoningOnlyStop = finish.kind === 'stop'
+        && message.content.length > 0
+        && message.content.every(block => block.type === 'reasoning')
+      if (reasoningOnlyStop) {
+        reasoningOnlyStops += 1
+        const retryLimit = this.reasoningOnlyStopRetries()
+        const reasoning = message.content.map(block => block.text).join('\n')
+        const willRetry = reasoningOnlyStops <= retryLimit
+        this.session.append('step/empty-answer', {
+          turn,
+          step,
+          attempt: reasoningOnlyStops,
+          retryLimit,
+          reasoningChars: reasoning.length,
+          tail: reasoning.slice(-EMPTY_ANSWER_TAIL_CHARS),
+          willRetry,
+        })
+        if (willRetry) continue
+        throw new LlmError(
+          `Model returned reasoning without a final answer after ${reasoningOnlyStops} attempt${reasoningOnlyStops === 1 ? '' : 's'}.`,
+          'EMPTY_ANSWER',
+        )
+      }
+
       this.session.append(
         'assistant/message',
         {

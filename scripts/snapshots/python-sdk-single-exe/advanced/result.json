@@ -1392,7 +1392,7 @@
         "chunk": {
           "type": "block-start",
           "index": 0,
-          "blockType": "text"
+          "blockType": "reasoning"
         }
       }
     },
@@ -1404,9 +1404,9 @@
         "turn": 1,
         "step": 7,
         "chunk": {
-          "type": "text-delta",
+          "type": "reasoning-delta",
           "index": 0,
-          "text": "ADVANCED_EXECUTABLE_OK"
+          "text": "unfinished"
         }
       }
     },
@@ -1421,8 +1421,8 @@
           "type": "block-end",
           "index": 0,
           "block": {
-            "type": "text",
-            "text": "ADVANCED_EXECUTABLE_OK"
+            "type": "reasoning",
+            "text": "unfinished"
           }
         }
       }
@@ -1438,7 +1438,7 @@
           "type": "usage",
           "usage": {
             "inputTokens": 3,
-            "outputTokens": 3
+            "outputTokens": 1
           }
         }
       }
@@ -1459,8 +1459,98 @@
       }
     },
     {
-      "type": "assistant/message",
+      "type": "step/empty-answer",
       "seq": 81,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 7,
+        "attempt": 1,
+        "retryLimit": 2,
+        "reasoningChars": 10,
+        "tail": "unfinished",
+        "willRetry": true
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 82,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 7,
+        "chunk": {
+          "type": "block-start",
+          "index": 0,
+          "blockType": "text"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 83,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 7,
+        "chunk": {
+          "type": "text-delta",
+          "index": 0,
+          "text": "ADVANCED_EXECUTABLE_OK"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 84,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 7,
+        "chunk": {
+          "type": "block-end",
+          "index": 0,
+          "block": {
+            "type": "text",
+            "text": "ADVANCED_EXECUTABLE_OK"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 85,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 7,
+        "chunk": {
+          "type": "usage",
+          "usage": {
+            "inputTokens": 3,
+            "outputTokens": 3
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 86,
+      "time": 0,
+      "data": {
+        "turn": 1,
+        "step": 7,
+        "chunk": {
+          "type": "finish",
+          "reason": {
+            "kind": "stop"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 87,
       "time": 0,
       "data": {
         "turn": 1,
@@ -1486,17 +1576,17 @@
         }
       },
       "sourceEventSeqs": [
-        76,
-        77,
-        78,
-        79,
-        80
+        82,
+        83,
+        84,
+        85,
+        86
       ],
       "surfaceOp": "append"
     },
     {
       "type": "step/end",
-      "seq": 82,
+      "seq": 88,
       "time": 0,
       "data": {
         "turn": 1,
@@ -1505,7 +1595,7 @@
     },
     {
       "type": "turn/end",
-      "seq": 83,
+      "seq": 89,
       "time": 0,
       "data": {
         "turn": 1,
@@ -4268,7 +4358,7 @@
             "chunk": {
               "type": "block-start",
               "index": 0,
-              "blockType": "text"
+              "blockType": "reasoning"
             }
           }
         }
@@ -4286,9 +4376,9 @@
             "turn": 1,
             "step": 7,
             "chunk": {
-              "type": "text-delta",
+              "type": "reasoning-delta",
               "index": 0,
-              "text": "ADVANCED_EXECUTABLE_OK"
+              "text": "unfinished"
             }
           }
         }
@@ -4309,8 +4399,8 @@
               "type": "block-end",
               "index": 0,
               "block": {
-                "type": "text",
-                "text": "ADVANCED_EXECUTABLE_OK"
+                "type": "reasoning",
+                "text": "unfinished"
               }
             }
           }
@@ -4332,7 +4422,7 @@
               "type": "usage",
               "usage": {
                 "inputTokens": 3,
-                "outputTokens": 3
+                "outputTokens": 1
               }
             }
           }
@@ -4365,8 +4455,134 @@
       "payload": {
         "sessionId": "{{parent}}",
         "event": {
-          "type": "assistant/message",
+          "type": "step/empty-answer",
           "seq": 81,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 7,
+            "attempt": 1,
+            "retryLimit": 2,
+            "reasoningChars": 10,
+            "tail": "unfinished",
+            "willRetry": true
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/chunk",
+          "seq": 82,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 7,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "text"
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/chunk",
+          "seq": 83,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 7,
+            "chunk": {
+              "type": "text-delta",
+              "index": 0,
+              "text": "ADVANCED_EXECUTABLE_OK"
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/chunk",
+          "seq": 84,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 7,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "text",
+                "text": "ADVANCED_EXECUTABLE_OK"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/chunk",
+          "seq": 85,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 7,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 3,
+                "outputTokens": 3
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/chunk",
+          "seq": 86,
+          "time": 0,
+          "data": {
+            "turn": 1,
+            "step": 7,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "stop"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "session.event",
+      "payload": {
+        "sessionId": "{{parent}}",
+        "event": {
+          "type": "assistant/message",
+          "seq": 87,
           "time": 0,
           "data": {
             "turn": 1,
@@ -4392,11 +4608,11 @@
             }
           },
           "sourceEventSeqs": [
-            76,
-            77,
-            78,
-            79,
-            80
+            82,
+            83,
+            84,
+            85,
+            86
           ],
           "surfaceOp": "append"
         }
@@ -4408,7 +4624,7 @@
         "sessionId": "{{parent}}",
         "event": {
           "type": "step/end",
-          "seq": 82,
+          "seq": 88,
           "time": 0,
           "data": {
             "turn": 1,
@@ -4423,7 +4639,7 @@
         "sessionId": "{{parent}}",
         "event": {
           "type": "turn/end",
-          "seq": 83,
+          "seq": 89,
           "time": 0,
           "data": {
             "turn": 1,

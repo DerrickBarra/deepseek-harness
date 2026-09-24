@@ -198,6 +198,30 @@ describe('tokenUsage session projection', () => {
     })
   })
 
+  it('accumulates usage from reasoning-only stop retries in the same step', async () => {
+    const { ctx, session } = await harness()
+    startStep(session, 1, 1)
+    usageChunk(session, { inputTokens: 9, outputTokens: 3 }, 1, 1)
+    session.append('step/empty-answer', {
+      turn: 1,
+      step: 1,
+      attempt: 1,
+      retryLimit: 2,
+      reasoningChars: 3,
+      tail: 'one',
+      willRetry: true,
+    })
+    const source = usageChunk(session, { inputTokens: 11, outputTokens: 4 }, 1, 1)
+    finalUsage(session, { inputTokens: 11, outputTokens: 4 }, 1, 1, [source])
+
+    expect(projected(ctx, session)).toEqual({
+      uncachedInputTokens: 20,
+      outputTokens: 7,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    })
+  })
+
   it('does not erase historical billing when the visible surface is replaced', async () => {
     const { ctx, session } = await harness()
     startStep(session, 1, 1)

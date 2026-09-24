@@ -264,6 +264,7 @@ class MockModelHandler(BaseHTTPRequestHandler):
     """Return deterministic text, worker, and orchestration completions."""
 
     requests: list[dict[str, object]] = []
+    reasoning_only_stops = 0
 
     def do_POST(self) -> None:
         content_length = int(self.headers.get("content-length", "0"))
@@ -563,8 +564,22 @@ def advanced_tool_followup(
             raise AssertionError(f"cordis_undefine returned no removal result: {tool_text}")
         if "snapshot_double" in advertised_tool_names(body):
             raise AssertionError("snapshot_double remained advertised after cordis_undefine")
+        if MockModelHandler.reasoning_only_stops == 0:
+            MockModelHandler.reasoning_only_stops += 1
+            return reasoning_only_chunks("unfinished")
         return text_chunks(SNAPSHOT_FINAL_TEXT)
     raise AssertionError(f"unexpected advanced tool follow-up: {call_id} {tool_name}: {tool_text}")
+
+
+def reasoning_only_chunks(text: str) -> list[dict[str, object]]:
+    """Build a normal-stop response containing only reasoning."""
+    return [
+        {"choices": [{"delta": {"role": "assistant", "content": None, "reasoning_content": text}}]},
+        {
+            "choices": [{"delta": {"content": ""}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 3, "completion_tokens": 1},
+        },
+    ]
 
 
 def text_chunks(text: str) -> list[dict[str, object]]:
@@ -662,6 +677,7 @@ def assert_advertised_tool(body: dict[str, object], expected: str) -> None:
 class MockModel:
     def __enter__(self) -> "MockModel":
         MockModelHandler.requests.clear()
+        MockModelHandler.reasoning_only_stops = 0
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), MockModelHandler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()

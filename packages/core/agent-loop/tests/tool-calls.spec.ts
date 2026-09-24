@@ -11,7 +11,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import LlmRuntime from '@deepseek-ai/dsh-llm'
 import ToolRuntime, { defineContentToolFixture, TOOL_ABORTED_BEFORE_DISPATCH, TOOL_RUNTIME_SCHEDULER, type PostToolDecision, type PreToolDecision } from '@deepseek-ai/dsh-tools'
 import AgentRegistry, { type Agent } from '@deepseek-ai/dsh-agent'
-import AgentLoop, { DEFAULT_MAX_PARALLEL_TOOL_CALLS } from '@deepseek-ai/dsh-agent-loop'
+import AgentLoop, { DEFAULT_MAX_PARALLEL_TOOL_CALLS, DEFAULT_REASONING_ONLY_STOP_RETRIES } from '@deepseek-ai/dsh-agent-loop'
 import { MockAdapter, textResponse } from './mock-adapter.ts'
 import { CodeRuntime } from '@deepseek-ai/dsh-code-runtime'
 import type { CodeRunRequest, CodeRunResult } from '@deepseek-ai/dsh-code-runtime'
@@ -272,6 +272,10 @@ describe('tool-call scheduler: rolling pool honors maxParallelToolCalls', () => 
       .toThrow('maxParallelToolCalls must be a positive integer')
     expect(() => new AgentLoop(new Context(), { agents: [], maxParallelToolCalls: 1.5 }))
       .toThrow('maxParallelToolCalls must be a positive integer')
+    expect(() => new AgentLoop(new Context(), { agents: [], reasoningOnlyStopRetries: -1 }))
+      .toThrow('reasoningOnlyStopRetries must be a non-negative safe integer')
+    expect(() => new AgentLoop(new Context(), { agents: [], reasoningOnlyStopRetries: 1.5 }))
+      .toThrow('reasoningOnlyStopRetries must be a non-negative safe integer')
   })
 
   it('defaults the cap when direct construction bypasses the config schema', async () => {
@@ -284,6 +288,7 @@ describe('tool-call scheduler: rolling pool honors maxParallelToolCalls', () => 
 
     const loop = new AgentLoop(ctx, { agents: [] })
     expect(loop.config.maxParallelToolCalls).toBe(DEFAULT_MAX_PARALLEL_TOOL_CALLS)
+    expect(loop.config.reasoningOnlyStopRetries).toBe(DEFAULT_REASONING_ONLY_STOP_RETRIES)
     await ctx.fiber.dispose()
   })
 

@@ -27,7 +27,7 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
 import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
 import { ReactLoopAgent } from './agent.ts'
-import { DEFAULT_MAX_PARALLEL_TOOL_CALLS } from './constants.ts'
+import { DEFAULT_MAX_PARALLEL_TOOL_CALLS, DEFAULT_REASONING_ONLY_STOP_RETRIES } from './constants.ts'
 
 /** Fiber states that cannot own or serve a new lifecycle. */
 const INACTIVE_STATES: ReadonlySet<FiberState> = new Set([
@@ -138,6 +138,15 @@ function resolveMaxParallelToolCalls(value: number | undefined): number {
   return maxParallelToolCalls
 }
 
+/** Resolve the retry cap for normal stops that contain only reasoning. */
+function resolveReasoningOnlyStopRetries(value: number | undefined): number {
+  const retries = value ?? DEFAULT_REASONING_ONLY_STOP_RETRIES
+  if (!Number.isSafeInteger(retries) || retries < 0) {
+    throw new Error('reasoningOnlyStopRetries must be a non-negative safe integer')
+  }
+  return retries
+}
+
 /** Reject an output-token cap that cannot be represented exactly on the request wire. */
 function assertAgentOptions(options: AgentOptions): void {
   if (options.maxTokens !== undefined
@@ -184,7 +193,7 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-export { DEFAULT_MAX_PARALLEL_TOOL_CALLS }
+export { DEFAULT_MAX_PARALLEL_TOOL_CALLS, DEFAULT_REASONING_ONLY_STOP_RETRIES }
 
 /**
  * One launcher-selected session identity for a configured agent. `resume`
@@ -244,11 +253,14 @@ export const AGENT_LOOP_SETTINGS_NAMESPACE = settingsNamespace('agent-loop')
 export interface AgentLoopSettings {
   /** Maximum parallel-safe calls in flight per agent step. */
   maxParallelToolCalls: number
+  /** Retries after a normal stop yields reasoning without text or tool calls. */
+  reasoningOnlyStopRetries: number
 }
 
 /** Schema of the agent-loop settings section. */
 export const AGENT_LOOP_SETTINGS_SCHEMA: z<AgentLoopSettings> = z.object({
   maxParallelToolCalls: z.number().step(1).min(1).default(DEFAULT_MAX_PARALLEL_TOOL_CALLS),
+  reasoningOnlyStopRetries: z.number().step(1).min(0).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_REASONING_ONLY_STOP_RETRIES),
 })
 
 /** Agent-loop plugin configuration. */
@@ -258,6 +270,11 @@ export interface Config {
    * omission defaults to {@link DEFAULT_MAX_PARALLEL_TOOL_CALLS}.
    */
   maxParallelToolCalls?: number
+  /**
+   * Retries after a normal stop yields reasoning without text or tool calls;
+   * omission defaults to {@link DEFAULT_REASONING_ONLY_STOP_RETRIES}.
+   */
+  reasoningOnlyStopRetries?: number
   /** Agents created or resumed at plugin startup. */
   agents: (AgentOptions & {
     /** Stable config label used in logs and as the fresh combined-id prefix. */
@@ -272,7 +289,7 @@ export interface Config {
 }
 
 /** Agent-loop configuration after defaults and load-time validation. */
-type ResolvedConfig = Config & { maxParallelToolCalls: number }
+type ResolvedConfig = Config & { maxParallelToolCalls: number; reasoningOnlyStopRetries: number }
 
 /** Reject self-contained identity conflicts before any configured agent starts. */
 function validateConfiguredAgents(agents: Config['agents']): void {
@@ -299,6 +316,7 @@ export class AgentLoop extends Service implements AgentFactory {
   /** Runtime schema for declarative agents. */
   static Config = z.object({
     maxParallelToolCalls: z.number().step(1).min(1).default(DEFAULT_MAX_PARALLEL_TOOL_CALLS),
+    reasoningOnlyStopRetries: z.number().step(1).min(0).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_REASONING_ONLY_STOP_RETRIES),
     agents: z.array(z.object({
       id: z.string().required(),
       sessionId: z.string().min(1),
@@ -320,6 +338,7 @@ export class AgentLoop extends Service implements AgentFactory {
     super(ctx, 'agentLoop')
     const entry: AgentLoopSettings = {
       maxParallelToolCalls: resolveMaxParallelToolCalls(config.maxParallelToolCalls),
+      reasoningOnlyStopRetries: resolveReasoningOnlyStopRetries(config.reasoningOnlyStopRetries),
     }
     let source: () => AgentLoopSettings = () => entry
     this.config = {
@@ -331,12 +350,18 @@ export class AgentLoop extends Service implements AgentFactory {
       get maxParallelToolCalls() {
         return source().maxParallelToolCalls
       },
+      get reasoningOnlyStopRetries() {
+        return source().reasoningOnlyStopRetries
+      },
     }
     installSettingsSection(ctx, AGENT_LOOP_SETTINGS_NAMESPACE, AGENT_LOOP_SETTINGS_SCHEMA, entry, {
       // The schema admits any integer above zero; `resolveMaxParallelToolCalls`
       // owns the whole rule, so refusing here keeps the running scheduler on
       // its last good cap instead of failing at the next tool group.
-      validate: value => void resolveMaxParallelToolCalls(value.maxParallelToolCalls),
+      validate: (value) => {
+        resolveMaxParallelToolCalls(value.maxParallelToolCalls)
+        resolveReasoningOnlyStopRetries(value.reasoningOnlyStopRetries)
+      },
       setSource: (current) => {
         source = current
       },
@@ -546,7 +571,13 @@ export class AgentLoop extends Service implements AgentFactory {
       throw abort.signal.reason instanceof Error ? abort.signal.reason : new Error(String(abort.signal.reason))
     }
     try {
-      const agent = machine = new ReactLoopAgent(loopCtx, id, options, session)
+      const agent = machine = new ReactLoopAgent(
+        loopCtx,
+        id,
+        options,
+        session,
+        () => this.config.reasoningOnlyStopRetries,
+      )
       machineReady.resolve()
       assertLive()
 

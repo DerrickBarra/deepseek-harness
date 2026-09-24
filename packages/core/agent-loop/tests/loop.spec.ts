@@ -7,7 +7,7 @@ import ToolRuntime, { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
 import AgentRegistry, { type Agent } from '@deepseek-ai/dsh-agent'
 
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { MockAdapter, maxTokensResponse, textResponse, toolCallResponse } from './mock-adapter.ts'
+import { MockAdapter, maxTokensResponse, reasoningOnlyStopResponse, textResponse, toolCallResponse } from './mock-adapter.ts'
 
 function driverDone(agent: Agent): Promise<void> {
   return (agent as Agent & { done: Promise<void> }).done
@@ -958,6 +958,121 @@ describe('agent loop', () => {
     await waitForIdle(ctx, agent)
 
     expect(reasons).toEqual([{ kind: 'aborted', reason: { kind: 'user' } }])
+  })
+
+  it('retries a reasoning-only stop without adding the failed attempt to model history', async () => {
+    const adapter = new MockAdapter([
+      reasoningOnlyStopResponse('unfinished reasoning'),
+      textResponse('final answer'),
+    ])
+    const ctx = await harness(adapter)
+    const agent = ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+
+    send(agent, 'go')
+    await waitForIdle(ctx, agent)
+
+    expect(adapter.requests).toHaveLength(2)
+    expect(adapter.requests[1]!.messages).toEqual([{
+      id: expect.any(String) as unknown,
+      role: 'user',
+      content: [{ type: 'text', text: 'go' }],
+      source: { kind: 'user' },
+    }])
+    const emptyAnswers = agent.session.events.filter(event => event.type === 'step/empty-answer')
+    expect(emptyAnswers.map(event => event.type === 'step/empty-answer' && event.data)).toEqual([{
+      turn: 1,
+      step: 1,
+      attempt: 1,
+      retryLimit: 2,
+      reasoningChars: 20,
+      tail: 'unfinished reasoning',
+      willRetry: true,
+    }])
+    const assistantMessages = agent.session.events.filter(event => event.type === 'assistant/message')
+    expect(assistantMessages).toHaveLength(1)
+    expect(agent.session.deriveMessages().at(-1)?.content).toEqual([{ type: 'text', text: 'final answer' }])
+    const turnEnd = agent.session.events.findLast(event => event.type === 'turn/end')
+    expect(turnEnd?.type === 'turn/end' && turnEnd.data.reason).toEqual({ kind: 'completed' })
+  })
+
+  it('surfaces a typed diagnostic after reasoning-only stop retries are exhausted', async () => {
+    const adapter = new MockAdapter([
+      reasoningOnlyStopResponse('first incomplete'),
+      reasoningOnlyStopResponse('second incomplete'),
+      reasoningOnlyStopResponse('third incomplete'),
+    ])
+    const ctx = await harness(adapter)
+    const agent = ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+    const errors: unknown[] = []
+    ctx.on('agent/error', ({ error }) => { errors.push(error) })
+
+    send(agent, 'go')
+    await waitForIdle(ctx, agent)
+
+    expect(adapter.requests).toHaveLength(3)
+    expect(agent.session.events.filter(event => event.type === 'assistant/message')).toHaveLength(0)
+    const emptyAnswers = agent.session.events.filter(event => event.type === 'step/empty-answer')
+    expect(emptyAnswers.map(event => event.type === 'step/empty-answer' && {
+      attempt: event.data.attempt,
+      retryLimit: event.data.retryLimit,
+      willRetry: event.data.willRetry,
+    })).toEqual([
+      { attempt: 1, retryLimit: 2, willRetry: true },
+      { attempt: 2, retryLimit: 2, willRetry: true },
+      { attempt: 3, retryLimit: 2, willRetry: false },
+    ])
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toBeInstanceOf(LlmError)
+    expect((errors[0] as LlmError).failure).toEqual({
+      code: 'EMPTY_ANSWER',
+      message: 'Model returned reasoning without a final answer after 3 attempts.',
+    })
+    const turnEnd = agent.session.events.findLast(event => event.type === 'turn/end')
+    expect(turnEnd?.type === 'turn/end' && turnEnd.data.reason).toEqual({
+      kind: 'error',
+      error: {
+        code: 'EMPTY_ANSWER',
+        message: 'Model returned reasoning without a final answer after 3 attempts.',
+      },
+    })
+  })
+
+  it('does not retry a normal stop that includes final text after reasoning', async () => {
+    const adapter = new MockAdapter([[
+      { type: 'block-start', index: 0, blockType: 'reasoning' },
+      { type: 'reasoning-delta', index: 0, text: 'thought' },
+      { type: 'block-end', index: 0, block: { type: 'reasoning', text: 'thought' } },
+      { type: 'block-start', index: 1, blockType: 'text' },
+      { type: 'text-delta', index: 1, text: 'answer' },
+      { type: 'block-end', index: 1, block: { type: 'text', text: 'answer' } },
+      { type: 'finish', reason: { kind: 'stop' } },
+    ]])
+    const ctx = await harness(adapter)
+    const agent = ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+
+    send(agent, 'go')
+    await waitForIdle(ctx, agent)
+
+    expect(adapter.requests).toHaveLength(1)
+    expect(agent.session.events.some(event => event.type === 'step/empty-answer')).toBe(false)
+    expect(agent.session.events.filter(event => event.type === 'assistant/message')).toHaveLength(1)
+  })
+
+  it('does not retry reasoning-only max-tokens output', async () => {
+    const adapter = new MockAdapter([[
+      ...reasoningOnlyStopResponse('truncated').slice(0, -1),
+      { type: 'finish', reason: { kind: 'max-tokens' } },
+    ]])
+    const ctx = await harness(adapter)
+    const agent = ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })
+
+    send(agent, 'go')
+    await waitForIdle(ctx, agent)
+
+    expect(adapter.requests).toHaveLength(1)
+    expect(agent.session.events.some(event => event.type === 'step/empty-answer')).toBe(false)
+    const turnEnd = agent.session.events.findLast(event => event.type === 'turn/end')
+    expect(turnEnd?.type === 'turn/end' && turnEnd.data.reason).toEqual({ kind: 'max-tokens' })
   })
 
   it('surfaces max-tokens as the turn-end reason when the last step is cut off', async () => {

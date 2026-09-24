@@ -112,9 +112,11 @@ type ContextPressureState = z.infer<typeof contextPressureStateSchema>
  * Usage chunks provide an early sample that survives a later request failure;
  * an assistant message provides the final sample for the same turn/step. A
  * repeated sample replaces that step's earlier value instead of double
- * counting it. The single `last` slot relies on the session-log invariant
- * that usage reports for one turn/step are adjacent: once a later step begins,
- * a legal log never reports usage for an earlier step again.
+ * counting it. `step/empty-answer` commits the rejected attempt by clearing
+ * the replacement slot, so usage from a same-step retry accumulates. The
+ * single `last` slot relies on the session-log invariant that usage reports
+ * for one turn/step are adjacent: once a later step begins, a legal log never
+ * reports usage for an earlier step again.
  */
 export const tokenUsageProjectionDefinition = {
   key: 'tokenUsage',
@@ -122,6 +124,12 @@ export const tokenUsageProjectionDefinition = {
   stateSchema: tokenUsageStateSchema,
   init: () => ({ totals: zeroBuckets(), last: null }),
   apply: (state, event) => {
+    if (event.type === 'step/empty-answer') {
+      return state.last?.turn === event.data.turn && state.last.step === event.data.step
+        ? { ...state, last: null }
+        : state
+    }
+
     let turn: number
     let step: number
     let usage: TokenUsage

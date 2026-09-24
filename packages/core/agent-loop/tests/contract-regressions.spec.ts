@@ -5,7 +5,7 @@ import SessionStore, { Session, SessionEvent, SessionId, TurnEndReason, type Use
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { defineContentToolFixture, type PostToolDecision } from '@deepseek-ai/dsh-tools'
 import AgentRegistry, { type Agent } from '@deepseek-ai/dsh-agent'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
+import AgentLoop, { DEFAULT_REASONING_ONLY_STOP_RETRIES } from '@deepseek-ai/dsh-agent-loop'
 import { ReactLoopAgent } from '../src/agent.ts'
 import InvariantRegistry from '@deepseek-ai/dsh-invariants'
 import * as SessionInvariant from '@deepseek-ai/dsh-session/invariant'
@@ -533,7 +533,11 @@ describe('turn numbering continues across seeded sessions', () => {
 
     const seeded = ctx2.sessions.create(SessionId('forked'), { seed: [...agent.session.events] })
     const forked = new ReactLoopAgent(
-      ctx2, SessionId('forked-agent'), { provider: 'mock', model: 'mock' }, seeded,
+      ctx2,
+      SessionId('forked-agent'),
+      { provider: 'mock', model: 'mock' },
+      seeded,
+      () => DEFAULT_REASONING_ONLY_STOP_RETRIES,
     )
 
     const turns: number[] = []

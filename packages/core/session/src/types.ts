@@ -255,6 +255,20 @@ export interface SessionEventMap {
   /** Closes step `step` of turn `turn`. */
   'step/end': { turn: number; step: number }
   /**
+   * Records a normal provider stop that contained reasoning but no final text or
+   * tool call. The bounded suffix supports diagnosis without adding the failed
+   * attempt to derived model history.
+   */
+  'step/empty-answer': {
+    turn: number
+    step: number
+    attempt: number
+    retryLimit: number
+    reasoningChars: number
+    tail: string
+    willRetry: boolean
+  }
+  /**
    * A user-role message on the model-visible surface: a direct human prompt
    * (the queued message claimed for this turn), a synthetic `agent.inject()`
    * context (file-change notices, subdir AGENTS.md, skill content, cron

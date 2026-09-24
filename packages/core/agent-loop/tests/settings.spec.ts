@@ -65,12 +65,28 @@ describe('agent-loop settings section', () => {
     await bench.ctx.fiber.dispose()
   })
 
+  it('updates and validates the reasoning-only stop retry cap', async () => {
+    const bench = await boot()
+    expect(bench.ctx.agentLoop.config.reasoningOnlyStopRetries).toBe(2)
+
+    await bench.ctx.settings.update(AGENT_LOOP_SETTINGS_NAMESPACE, { reasoningOnlyStopRetries: 0 })
+    expect(bench.ctx.agentLoop.config.reasoningOnlyStopRetries).toBe(0)
+
+    await expect(bench.ctx.settings.update(AGENT_LOOP_SETTINGS_NAMESPACE, { reasoningOnlyStopRetries: -1 }))
+      .rejects.toThrow()
+    expect(bench.ctx.agentLoop.config.reasoningOnlyStopRetries).toBe(0)
+    await bench.ctx.fiber.dispose()
+  })
+
   it('never offers the composed agents array to the settings document', async () => {
     const bench = await boot()
 
     const descriptor = bench.ctx.settings.describe().find(row => String(row.ns) === 'agent-loop')
 
-    expect(Object.keys(descriptor?.value as object)).toEqual(['maxParallelToolCalls'])
+    expect(Object.keys(descriptor?.value as object)).toEqual([
+      'maxParallelToolCalls',
+      'reasoningOnlyStopRetries',
+    ])
     await bench.ctx.fiber.dispose()
   })
 

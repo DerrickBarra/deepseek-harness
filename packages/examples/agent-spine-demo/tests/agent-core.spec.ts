@@ -290,13 +290,15 @@ describe('dsh-agent-spine-demo bundle', () => {
     await ctx.fiber.dispose()
   })
 
-  it('forwards the global maxParallelToolCalls config to agent-loop', async () => {
+  it('forwards the global agent-loop settings', async () => {
     const ctx = await mount({
       agents: [{ id: SessionId('main'), provider: 'mock', model: 'mock' }],
       maxParallelToolCalls: 3,
+      reasoningOnlyStopRetries: 1,
       workspaceContext: false,
     })
     expect(ctx.get('agentLoop')?.config.maxParallelToolCalls).toBe(3)
+    expect(ctx.get('agentLoop')?.config.reasoningOnlyStopRetries).toBe(1)
     await ctx.fiber.dispose()
   })
 

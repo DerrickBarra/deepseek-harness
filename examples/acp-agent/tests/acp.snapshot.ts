@@ -414,6 +414,10 @@ const SCENARIOS: Scenario[] = [
   // reply, and a clean completed retry turn. Its overlay only pins a deterministic
   // 1 ms zero-jitter delay, so it shares the default header class.
   { name: 'empty-response-retry', hasModelTurn: true, recorded: false, configPath: RETRY_CONFIG },
+  // Keyless, authored: the first normal stop contains only reasoning. The core
+  // loop records step/empty-answer without ACP output, retries the same step,
+  // and exposes only the recovered final text.
+  { name: 'reasoning-only-stop-retry', hasModelTurn: true, recorded: false },
   // Keyless, authored (like error-finish): a live model cannot be coaxed into
   // a deterministic mid-tool-call output-limit truncation. Turn 1's script ends
   // at `max-tokens` with an unfinished tool call and adapter replay metadata for

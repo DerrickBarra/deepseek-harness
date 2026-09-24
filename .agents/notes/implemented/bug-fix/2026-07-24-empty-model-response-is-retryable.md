@@ -14,7 +14,7 @@ An adapter classifies a completed empty response as a provider-boundary failure,
 
 - `dsh-llm` exports the canonical code `EMPTY_RESPONSE_CODE` (`'EMPTY_RESPONSE'`) beside `CONTEXT_WINDOW_EXCEEDED_CODE`/`QUOTA_EXCEEDED_CODE`.
 - `dsh-llm-pi-ai` (`mapStopReason`): a terminal `stop` whose assistant message has no content blocks becomes a `finish {kind: 'error'}` with that code. Context-overflow detection still wins where it applies (it is checked first and is the more actionable classification).
-- `dsh-llm-deepseek` (`translate`): at `[DONE]`, a `stop` (or absent) finish with no opened blocks becomes the same error finish. Reasoning-only streams count as content and stay successful.
+- `dsh-llm-deepseek` (`translate`): at `[DONE]`, a `stop` (or absent) finish with no opened blocks becomes the same error finish. Reasoning-only streams count as content at the adapter boundary; the agent loop separately handles a normal stop without final output ([decision](2026-09-24-reasoning-only-stop-retry.md)).
 - The provider-owned normal retry default includes `EMPTY_RESPONSE`: the attempt produced nothing durable, so repeating it is safe; deployments can still remove it via `retryableCodes`, and `dsh-llm-retry` executes the resolved policy.
 
 Detection is scoped to `stop` finishes only. `max-tokens` with empty content keeps its existing meaning (pi-ai already normalizes the zero-output overflow case), `tool-calls` cannot be block-empty in practice, and error/aborted finishes already fail.
@@ -27,7 +27,7 @@ The classification uses the existing loop machinery — `finishError` → `agent
 
 **A stream-transform plugin on the `llm/stream` waterfall.** Provider-neutral and one implementation, but it adds a package plus wiring for what is a boundary fact each adapter can state in a few lines, and default-on behavior would still require touching every bundle.
 
-**Treat whitespace-only or reasoning-only responses as empty too.** Rejected as overreach: those carry model-produced content, and misclassifying a legitimate (if useless) response as a transport-class failure risks retry loops on models that intentionally stop after reasoning. The scope is exactly "zero content blocks".
+**Treat whitespace-only or reasoning-only responses as empty too.** Rejected as an `EMPTY_RESPONSE` classification: those carry model-produced content, so this provider-boundary code remains scoped to zero content blocks. A later semantic guard handles the narrower reasoning-only normal-stop case without relabeling it as transport/provider emptiness ([decision](2026-09-24-reasoning-only-stop-retry.md)).
 
 ## Consequences
 

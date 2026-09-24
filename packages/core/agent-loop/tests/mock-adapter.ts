@@ -27,6 +27,17 @@ export function maxTokensResponse(text: string): StreamChunk[] {
   ]
 }
 
+/** A normal stop that contains reasoning without final text or tool calls. */
+export function reasoningOnlyStopResponse(text: string): StreamChunk[] {
+  return [
+    { type: 'block-start', index: 0, blockType: 'reasoning' },
+    { type: 'reasoning-delta', index: 0, text },
+    { type: 'block-end', index: 0, block: { type: 'reasoning', text } },
+    { type: 'usage', usage: { inputTokens: 10, outputTokens: text.length } },
+    { type: 'finish', reason: { kind: 'stop' } },
+  ]
+}
+
 export function toolCallResponse(rawCallId: string, name: string, args: object, text?: string): StreamChunk[] {
   const callId = CallId(rawCallId)
   const argumentsJson = JSON.stringify(args)

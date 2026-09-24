@@ -119,6 +119,10 @@ function validateEvent(
       requireOpenStep(trace, 'assistant/message', event.data.turn, event.data.step, fail)
       break
     }
+    case 'step/empty-answer': {
+      requireOpenStep(trace, 'step/empty-answer', event.data.turn, event.data.step, fail)
+      break
+    }
     case 'tool/call': {
       requireOpenStep(trace, 'tool/call', event.data.turn, event.data.step, fail)
       pendingCalls = { kind: 'add', callId: event.data.callId }

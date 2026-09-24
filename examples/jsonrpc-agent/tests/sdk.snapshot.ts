@@ -91,6 +91,12 @@ const SCENARIOS: SdkScenario[] = [
     children: 0,
   },
   {
+    name: 'reasoning-only-stop-retry',
+    prompt: 'This prompt first receives reasoning without an answer, then a recovered reply.',
+    sessionId: 'sdk-reasoning-only-stop',
+    children: 0,
+  },
+  {
     name: 'bash-tool',
     prompt: 'Run this exact command with your bash tool, then reply with its stdout only: echo dsh-sdk-proof-7391',
     sessionId: 'sdk-snapshot-bash',
