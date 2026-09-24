@@ -121,6 +121,7 @@ describe('PiAiAdapter provider routing', () => {
       websocketConnectTimeoutMs: 3000,
       streamIdleTimeoutMs: 10_000,
       thinkingBudgets: { high: 2048 },
+      frequencyPenalty: 0.3,
     })
     await assemble(ctx, {
       model: 'deepseek-v4-flash',
@@ -133,6 +134,7 @@ describe('PiAiAdapter provider routing', () => {
       model: 'deepseek-v4-flash',
       temperature: 0.2,
       max_completion_tokens: 77,
+      frequency_penalty: 0.3,
       thinking: { type: 'enabled' },
       reasoning_effort: 'max',
     })

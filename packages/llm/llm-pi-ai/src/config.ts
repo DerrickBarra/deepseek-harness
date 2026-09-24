@@ -146,6 +146,8 @@ export interface PiAiProviderProfile {
   defaultInput?: PiAiModality[]
   /** Provider request headers; Harness attribution wins reserved names. */
   headers?: Record<string, string>
+  /** OpenAI-compatible repetition penalty in the provider's accepted range. */
+  frequencyPenalty?: number
   /** Provider-neutral pi-ai reasoning level. */
   reasoning?: ModelThinkingLevel
   /** Token budgets used by reasoning providers that support them. */
@@ -316,6 +318,7 @@ const profile = z.object({
   defaultMaxTokens: z.number().step(1).min(1).default(DEFAULT_MAX_TOKENS),
   defaultInput: z.array(z.union(MODALITIES)).default([...DEFAULT_INPUT]),
   headers: z.dict(z.string()),
+  frequencyPenalty: z.number().min(-2).max(2),
   reasoning: z.union(THINKING_LEVELS),
   thinkingBudgets,
   cacheRetention: z.union(['none', 'short', 'long']),
@@ -401,6 +404,10 @@ export function resolveProfiles(
         `llm-pi-ai: provider "${provider}" streamIdleTimeoutMs must be a positive finite number no greater than ${MAX_TIMER_DELAY_MS}`,
       )
     }
+    if (source.frequencyPenalty !== undefined
+      && (!Number.isFinite(source.frequencyPenalty) || source.frequencyPenalty < -2 || source.frequencyPenalty > 2)) {
+      throw new Error(`llm-pi-ai: provider "${provider}" frequencyPenalty must be a finite number from -2 through 2`)
+    }
     const maxRequestImageBytes = source.maxRequestImageBytes ?? DEFAULT_MAX_REQUEST_IMAGE_BYTES
     if (!Number.isInteger(maxRequestImageBytes) || maxRequestImageBytes <= 0) {
       throw new Error(`llm-pi-ai: provider "${provider}" maxRequestImageBytes must be a positive integer`)
@@ -437,6 +444,15 @@ export function resolveProfiles(
       defaultContextWindow: source.defaultContextWindow ?? DEFAULT_CONTEXT_WINDOW,
       defaultMaxTokens: source.defaultMaxTokens ?? DEFAULT_MAX_TOKENS,
     })
+    if (source.frequencyPenalty !== undefined) {
+      const unsupported = catalog.models.find(model => model.api !== 'openai-completions')
+      if (unsupported !== undefined) {
+        throw new Error(
+          `llm-pi-ai: provider "${provider}" frequencyPenalty requires openai-completions;`
+          + ` model "${unsupported.id}" uses "${unsupported.api}"`,
+        )
+      }
+    }
     const { apiKeyEnv, retryPolicy, models: _models, displayName: _displayName, ...rest } = source
     resolved.set(provider, {
       ...rest,

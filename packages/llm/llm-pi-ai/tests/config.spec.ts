@@ -65,6 +65,41 @@ describe('modality schema boundary', () => {
   })
 })
 
+describe('frequency penalty boundary', () => {
+  it('accepts the complete OpenAI range and rejects values outside it', () => {
+    expect(routeWith({ frequencyPenalty: -2 })).not.toThrow()
+    expect(routeWith({ frequencyPenalty: 2 })).not.toThrow()
+    expect(routeWith({ frequencyPenalty: -2.01 })).toThrow()
+    expect(routeWith({ frequencyPenalty: 2.01 })).toThrow()
+    const programmatic = {
+      providers: {
+        'acme-gateway': {
+          api: 'openai-completions',
+          baseURL: 'https://acme.test',
+          frequencyPenalty: Number.POSITIVE_INFINITY,
+          models: [{ id: 'm' }],
+        },
+      },
+    } as Config
+    expect(() => { assertServiceable(programmatic) })
+      .toThrow(/must be a finite number from -2 through 2/)
+  })
+
+  it('refuses the setting on a route that does not use openai-completions', () => {
+    const config = Config({
+      providers: {
+        anthropic: {
+          api: 'anthropic-messages',
+          baseURL: 'https://anthropic.test',
+          frequencyPenalty: 0.3,
+          models: [{ id: 'm' }],
+        },
+      },
+    })
+    expect(() => { assertServiceable(config) }).toThrow(/frequencyPenalty requires openai-completions/)
+  })
+})
+
 describe('request image policy bounds', () => {
   it.each([
     ['requestImagePixelBudget', 0, /requestImagePixelBudget must be a positive safe integer/],

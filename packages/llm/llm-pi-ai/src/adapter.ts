@@ -108,6 +108,11 @@ export interface PiAiAuthInjection {
   authContext: AuthContext
 }
 
+/** Add one configured OpenAI-compatible frequency penalty to pi-ai's request body. */
+function withFrequencyPenalty(payload: unknown, frequencyPenalty: number): unknown {
+  return { ...payload as Record<string, unknown>, frequency_penalty: frequencyPenalty }
+}
+
 /** Copy profile stream knobs into pi-ai's common option vocabulary. */
 function profileOptions(
   profile: ResolvedPiAiProviderProfile,
@@ -115,6 +120,7 @@ function profileOptions(
   apiKey: string | undefined,
 ): SimpleStreamOptions {
   const enabledReasoning: ThinkingLevel | undefined = reasoning === 'off' ? undefined : reasoning
+  const frequencyPenalty = profile.frequencyPenalty
   return {
     ...apiKey === undefined ? {} : { apiKey },
     ...enabledReasoning === undefined ? {} : { reasoning: enabledReasoning },
@@ -123,6 +129,9 @@ function profileOptions(
     ...profile.transport === undefined ? {} : { transport: profile.transport },
     ...profile.timeoutMs === undefined ? {} : { timeoutMs: profile.timeoutMs },
     ...profile.websocketConnectTimeoutMs === undefined ? {} : { websocketConnectTimeoutMs: profile.websocketConnectTimeoutMs },
+    ...frequencyPenalty === undefined
+      ? {}
+      : { onPayload: (payload: unknown) => withFrequencyPenalty(payload, frequencyPenalty) },
     // The agent recovery layer owns visible attempts; one adapter call is one SDK attempt.
     maxRetries: 0,
   }

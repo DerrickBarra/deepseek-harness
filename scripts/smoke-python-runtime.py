@@ -94,6 +94,17 @@ CUSTOM_CORDIS = """\
     toolBash: false
     tools:
       mode: both
+- id: llm-pi-ai
+  name: '@deepseek-ai/dsh-llm-pi-ai'
+  config:
+    providers:
+      deepseek-official:
+        apiKeyEnv: DEEPSEEK_API_KEY
+        api: openai-completions
+        baseURL: !!js process.env.DEEPSEEK_BASE_URL
+        frequencyPenalty: 0.3
+        models:
+          - id: smoke-model
 - id: sessions
   name: '@deepseek-ai/dsh-session-persistence-jsonl'
   config:
@@ -354,6 +365,8 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
     if prompt == SNAPSHOT_WORKFLOW_CHILD_PROMPT:
         return text_chunks("WORKFLOW_CHILD_OK")
     if prompt == SNAPSHOT_PROMPT:
+        if body.get("frequency_penalty") != 0.3:
+            raise AssertionError(f"pi-ai request omitted frequency_penalty: {body}")
         assert_advertised_tool(body, "cordis_define")
         return tool_call_chunks(
             "advanced-define",

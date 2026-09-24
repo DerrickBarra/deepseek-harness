@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/integration/2026-09-24-pi-ai-frequency-penalty-payload.md
+2026-09-24-pi-ai-frequency-penalty-payload.md: 2771b846219e307f67d71509278d53dfa7dab5e5
+2026-09-24-pi-ai-frequency-penalty-payload.zh.md: db4447c1dfe87df8c37d51cac6238128d9e18ee4
